@@ -171,3 +171,18 @@ resource "juju_integration" "mysql_vault_certificates" {
         endpoint = "certificates"
     }
 }
+
+resource "juju_application" "ovn_central" {
+    model = juju_model.ovb.name
+    name = "ovn-central"
+    charm {
+        name = "ovn-central"
+        channel = "22.03/stable"
+    }
+
+    config = {
+        source = "distro"
+    }
+    units = 3
+    placement = "lxd:${local.ovb_one_id},lxd:${local.ovb_two_id},lxd:${local.ovb_three_id}"
+}
