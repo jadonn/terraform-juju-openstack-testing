@@ -876,3 +876,54 @@ resource "juju_integration" "glance_vault" {
         endpoint = "certificates"
     }
 }
+
+resource "juju_application" "ceph_mon" {
+    model = juju_model.ovb.name
+    name = "ceph-mon"
+    charm {
+        name = "ceph-mon"
+        channel = "quincy/stable"
+    }
+
+    units = 3
+    placement = "lxd:${local.ovb_one_id},lxd:${local.ovb_two_id},lxd:${local.ovb_three_id}"
+}
+
+resource "juju_integration" "ceph_mon_ceph_osd" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ceph_mon.name
+        endpoint = "osd"
+    }
+
+    application {
+        name = juju_application.ceph_osds.name
+        endpoint = "mon"
+    }
+}
+
+resource "juju_integration" "ceph_mon_nova_compute" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ceph_mon.name
+        endpoint = "client"
+    }
+
+    application {
+        name = juju_application.nova_compute.name
+        endpoint = "ceph"
+    }
+}
+
+resource "juju_integration" "ceph_mon_glance" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ceph_mon.name
+        endpoint = "client"
+    }
+
+    application {
+        name = juju_application.glance.name
+        endpoint = "ceph"
+    }
+}
