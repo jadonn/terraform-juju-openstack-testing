@@ -217,7 +217,7 @@ resource "juju_application" "neutron_api_plugin_ovn" {
     placement = juju_application.neutron_api.placement
 }
 
-resource "juju_application" "ovn-chassis" {
+resource "juju_application" "ovn_chassis" {
     model = juju_model.ovb.name
     name = "ovn-chassis"
     charm {
@@ -232,4 +232,108 @@ resource "juju_application" "ovn-chassis" {
 
     units = 0 // Subordinate charm applications cannot have units
     placement = juju_application.neutron_api.placement
+}
+
+resource "juju_integration" "neutron_api_plugin_neutron_api" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.neutron_api_plugin_ovn.name
+        endpoint = "neutron-plugin"
+    }
+
+    application {
+        name = juju_application.neutron_api.name
+        endpoint = "neutron-plugin-api-subordinate"
+    }
+}
+
+resource "juju_integration" "neutron_api_plugin_ovn" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.neutron_api_plugin_ovn.name
+        endpoint = "ovsdb-cms"
+    }
+
+    application {
+        name = juju_application.ovn_central.name
+        endpoint = "ovsdb-cms"
+    }
+}
+
+resource "juju_integration" "ovn_chassis_ovn_central" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ovn_chassis.name
+        endpoint = "ovsdb"
+    }
+
+    application {
+        name = juju_application.ovn_central.name
+        endpoint = "ovsdb"
+    }
+}
+
+resource "juju_integration" "ovn_chassis_nova_compute" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ovn_chassis.name
+        endpoint = "nova-compute"
+    }
+
+    application {
+        name = juju_application.nova_compute.name
+        endpoint = "neutron-plugin"
+    }
+}
+
+resource "juju_integration" "neutron_api_vault" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.neutron_api.name
+        endpoint = "certificates"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
+}
+
+resource "juju_integration" "neutron_api_plugin_ovn_vault" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.neutron_api_plugin_ovn.name
+        endpoint = "certificates"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
+}
+
+resource "juju_integration" "ovn_central_vault" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ovn_central.name
+        endpoint = "certificates"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
+}
+
+resource "juju_integration" "ovn_chassis_vault" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ovn_chassis.name
+        endpoint = "certificates"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
 }
