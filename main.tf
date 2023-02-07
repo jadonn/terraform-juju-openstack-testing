@@ -927,3 +927,175 @@ resource "juju_integration" "ceph_mon_glance" {
         endpoint = "ceph"
     }
 }
+
+resource "juju_application" "cinder" {
+    model = juju_model.ovb.name
+    name = "cinder"
+    charm {
+        name = "cinder"
+        channel = "yoga/stable"
+    }
+
+    config = {
+        block-device = "None"
+        glance-api-version = "2"
+        openstack-origin = "distro"
+    }
+
+    units = 1
+    placement = "lxd:${local.ovb_two_id}"
+}
+
+resource "juju_application" "cinder_mysql_router" {
+    model = juju_model.ovb.name
+    name = "cinder-mysql-router"
+    charm {
+        name = "mysql-router"
+        channel = "8.0/stable"
+    }
+
+    units = 0
+    placement = juju_application.cinder.placement
+}
+
+resource "juju_integration" "cinder_mysql_router_db_router" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder_mysql_router.name
+        endpoint = "db-router"
+    }
+
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+        endpoint = "db-router"
+    }
+}
+
+resource "juju_integration" "cinder_mysql_router_shared_db" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder_mysql_router.name
+        endpoint = "shared-db"
+    }
+
+    application {
+        name = juju_application.cinder.name
+        endpoint = "shared-db"
+    }
+}
+
+resource "juju_integration" "cinder_nova_cloud_controller" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder.name
+        endpoint = "cinder-volume-service"
+    }
+
+    application {
+        name = juju_application.nova_cloud_controller.name
+        endpoint = "cinder-volume-service"
+    }
+}
+
+resource "juju_integration" "cinder_keystone" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder.name
+        endpoint = "identity-service"
+    }
+
+    application {
+        name = juju_application.keystone.name
+        endpoint = "identity-service"
+    }
+}
+
+resource "juju_integration" "cinder_rabbitmq" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder.name
+        endpoint = "amqp"
+    }
+
+    application {
+        name = juju_application.rabbitmq.name
+        endpoint = "amqp"
+    }
+}
+
+resource "juju_integration" "cinder_glance" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder.name
+        endpoint = "image-service"
+    }
+
+    application {
+        name = juju_application.glance.name
+        endpoint = "image-service"
+    }
+}
+
+resource "juju_integration" "cinder_vault" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder.name
+        endpoint = "certificates"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
+}
+
+resource "juju_application" "cinder_ceph" {
+    model = juju_model.ovb.name
+    name = "cinder-ceph"
+    charm {
+        name = "cinder-ceph"
+        channel = "yoga/stable"
+    }
+
+    units = 0
+    placement = juju_application.cinder.placement
+}
+
+resource "juju_integration" "cinder_ceph_cinder" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder_ceph.name
+        endpoint = "storage-backend"
+    }
+
+    application {
+        name = juju_application.cinder.name
+        endpoint = "storage-backend"
+    }
+}
+
+resource "juju_integration" "cinder_ceph_ceph_mon" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder_ceph.name
+        endpoint = "ceph"
+    }
+
+    application {
+        name = juju_application.ceph_mon.name
+        endpoint = "client"
+    }
+}
+
+resource "juju_integration" "cinder_ceph_nova_compute" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.cinder_ceph.name
+        endpoint = "ceph-access"
+    }
+
+    application {
+        name = juju_application.nova_compute.name
+        endpoint = "ceph-access"
+    }
+}
