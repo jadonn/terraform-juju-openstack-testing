@@ -451,3 +451,41 @@ resource "juju_integration" "keystone_vault_certificates" {
         endpoint = "certificates"
     }
 }
+
+resource "juju_application" "rabbitmq" {
+    model = juju_model.ovb.name
+    name = "rabbitmq-server"
+    charm {
+        name = "rabbitmq-server"
+        channel = "3.9/stable"
+    }
+
+    units = 1
+    placement = "lxd:${local.ovb_four_id}"
+}
+
+resource "juju_integration" "rabbitmq_neutron_api" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.rabbitmq.name
+        endpoint = "amqp"
+    }
+
+    application {
+        name = juju_application.neutron_api.name
+        endpoint = "amqp"
+    }
+}
+
+resource "juju_integration" "rabbitmq_nova_compute" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.rabbitmq.name
+        endpoint = "amqp"
+    }
+
+    application {
+        name = juju_application.nova_compute.name
+        endpoint = "amqp"
+    }
+}
