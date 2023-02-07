@@ -204,3 +204,32 @@ resource "juju_application" "neutron_api" {
     units = 1
     placement = "lxd:${local.ovb_two_id}"
 }
+
+resource "juju_application" "neutron_api_plugin_ovn" {
+    model = juju_model.ovb.name
+    name = "neutron-api-plugin-ovn"
+    charm {
+        name = "neutron-api-plugin-ovn"
+        channel = "yoga/stable"
+    }
+
+    units = 0 // Subordinate charm applications cannot have units
+    placement = juju_application.neutron_api.placement
+}
+
+resource "juju_application" "ovn-chassis" {
+    model = juju_model.ovb.name
+    name = "ovn-chassis"
+    charm {
+        name = "ovn-chassis"
+        channel = "22.03/stable"
+    }
+
+    config = {
+        bridge-interface-mappings = "br-ex:ens3" // You must update the device name ens3 to whatever your networking device name is
+        ovn-bridge-mappings = "physnet1:br-ex"
+    }
+
+    units = 0 // Subordinate charm applications cannot have units
+    placement = juju_application.neutron_api.placement
+}
