@@ -489,3 +489,123 @@ resource "juju_integration" "rabbitmq_nova_compute" {
         endpoint = "amqp"
     }
 }
+
+resource "juju_application" "nova_cloud_controller" {
+    model = juju_model.ovb.name
+    name = "nova-cloud-controller"
+    charm {
+        name = "nova-cloud-controller"
+        channel = "yoga/stable"
+    }
+
+    config = {
+        network-manager = "Neutron"
+        openstack-origin = "distro"
+    }
+
+    units = 1
+    placement = "lxd:${local.ovb_four_id}"
+}
+
+resource "juju_application" "ncc_mysql_router" {
+    model = juju_model.ovb.name
+    name = "ncc-mysql-router"
+    charm {
+        name = "mysql-router"
+        channel = "8.0/stable"
+    }
+
+    units = 0
+    placement = juju_application.nova_cloud_controller.placement
+}
+
+resource "juju_integration" "ncc_mysql_router_db_router" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ncc_mysql_router.name
+        endpoint = "db-router"
+    }
+
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+        endpoint = "db-router"
+    }
+}
+
+resource "juju_integration" "ncc_mysql_router_shared_db" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ncc_mysql_router.name
+        endpoint = "shared-db"
+    }
+
+    application {
+        name = juju_application.nova_cloud_controller.name
+        endpoint = "shared-db"
+    }
+}
+
+resource "juju_integration" "nova_cloud_controller_keystone" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.nova_cloud_controller.name
+        endpoint = "identity-service"
+    }
+
+    application {
+        name = juju_application.keystone.name
+        endpoint = "identity-service"
+    }
+}
+
+resource "juju_integration" "nova_cloud_controller_rabbitmq" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.nova_cloud_controller.name
+        endpoint = "amqp"
+    }
+
+    application {
+        name = juju_application.rabbitmq.name
+        endpoint = "amqp"
+    }
+}
+
+resource "juju_integration" "nova_cloud_controller_neutron_api" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.nova_cloud_controller.name
+        endpoint = "neutron-api"
+    }
+
+    application {
+        name = juju_application.neutron_api.name
+        endpoint = "neutron-api"
+    }
+}
+
+resource "juju_integration" "nova_cloud_controller_nova_compute" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.nova_cloud_controller.name
+        endpoint = "cloud-compute"
+    }
+
+    application {
+        name = juju_application.nova_compute.name
+        endpoint = "cloud-compute"
+    }
+}
+
+resource "juju_integration" "nova_cloud_controller_vault" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.nova_cloud_controller.name
+        endpoint = "certificates"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
+}
