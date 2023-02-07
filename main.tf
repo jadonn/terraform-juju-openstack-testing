@@ -698,3 +698,79 @@ resource "juju_integration" "placement_vault" {
         endpoint = "certificates"
     }
 }
+
+resource "juju_application" "openstack_dashboard" {
+    model = juju_model.ovb.name
+    name = "openstack-dashboard"
+    charm {
+        name = "openstack-dashboard"
+        channel = "yoga/stable"
+    }
+
+    units = 1
+    placement = "lxd:${local.ovb_three_id}"
+}
+
+resource "juju_application" "openstack_dashboard_mysql_router" {
+    model = juju_model.ovb.name
+    name = "dashboard-mysql-router"
+    charm {
+        name = "mysql-router"
+        channel = "8.0/stable"
+    }
+
+    units = 0
+    placement = juju_application.openstack_dashboard.placement
+}
+
+resource "juju_integration" "dashboard_mysql_router_db_router" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.openstack_dashboard_mysql_router.name
+        endpoint = "db-router"
+    }
+
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+        endpoint = "db-router"
+    }
+}
+
+resource "juju_integration" "dashboard_mysql_router_shared_db" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.openstack_dashboard_mysql_router.name
+        endpoint = "shared-db"
+    }
+
+    application {
+        name = juju_application.openstack_dashboard.name
+        endpoint = "shared-db"
+    }
+}
+
+resource "juju_integration" "openstack_dashboard_keystone" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.openstack_dashboard.name
+        endpoint = "identity-service"
+    }
+
+    application {
+        name = juju_application.keystone.name
+        endpoint = "identity-service"
+    }
+}
+
+resource "juju_integration" "openstack_dashboard_vault" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.openstack_dashboard.name
+        endpoint = "certificates"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
+}
