@@ -51,6 +51,13 @@ resource "juju_machine" "ovb_four" {
     constraints = "tags=compute"
 }
 
+locals {
+    ovb_one_id = split(":", juju_machine.ovb_one.id)[1]
+    ovb_two_id = split(":", juju_machine.ovb_two.id)[1]
+    ovb_three_id = split(":", juju_machine.ovb_three.id)[1]
+    ovb_four_id = split(":", juju_machine.ovb_four.id)[1]
+}
+
 resource "juju_application" "ceph_osds" {
     model = juju_model.ovb.name
     charm {
@@ -64,4 +71,25 @@ resource "juju_application" "ceph_osds" {
     }
     units = 4
     placement = join(",", [split(":", juju_machine.ovb_one.id)[1], split(":", juju_machine.ovb_two.id)[1], split(":", juju_machine.ovb_three.id)[1], split(":", juju_machine.ovb_four.id)[1]])
+}
+
+resource "juju_application" "nova_compute" {
+    model = juju_model.ovb.name
+    charm {
+        name = "nova-compute"
+        channel = "yoga/stable"
+        series = "jammy"
+    }
+
+    config = {
+        config-flags = "default_ephemeral_format=ext4"
+        enable-live-migration = "true"
+        enable-resize = "true"
+        migration-auth-type = "ssh"
+        virt-type = "qemu"
+        openstack-origin = "distro"
+    }
+    
+    units = 3
+    placement = join(",", [local.ovb_one_id, local.ovb_two_id, local.ovb_three_id])
 }
