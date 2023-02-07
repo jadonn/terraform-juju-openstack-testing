@@ -1099,3 +1099,28 @@ resource "juju_integration" "cinder_ceph_nova_compute" {
         endpoint = "ceph-access"
     }
 }
+
+resource "juju_application" "ceph_radosgw" {
+    model = juju_model.ovb.name
+    name = "ceph-radosgw"
+    charm {
+        name = "ceph-radosgw"
+        channel = "quincy/stable"
+    }
+
+    units = 1
+    placement = "lxd:${local.ovb_one_id}"
+}
+
+resource "juju_integration" "ceph_radosgw_ceph_mon" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.ceph_radosgw.name
+        endpoint = "mon"
+    }
+
+    application {
+        name = juju_application.ceph_mon.name
+        endpoint = "radosgw"
+    }
+}
