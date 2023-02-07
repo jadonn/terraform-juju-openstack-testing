@@ -93,3 +93,15 @@ resource "juju_application" "nova_compute" {
     units = 3
     placement = join(",", [local.ovb_one_id, local.ovb_two_id, local.ovb_three_id])
 }
+
+resource "juju_application" "mysql_innodb_cluster" {
+    model = juju_model.ovb.name
+    name = "mysql-innodb-cluster" // Needed the name or you get an error about how application- is an invalid application tag
+    charm {
+        name = "mysql-innodb-cluster"
+        channel = "8.0/stable"
+    }
+
+    units = 3
+    placement = "${local.ovb_one_id},${local.ovb_two_id},${local.ovb_three_id}"
+}
