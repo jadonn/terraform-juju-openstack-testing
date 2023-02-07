@@ -375,3 +375,79 @@ resource "juju_integration" "neutron_api_mysql_router_shared_db" {
         endpoint = "shared-db"
     }
 }
+
+resource "juju_application" "keystone" {
+    model = juju_model.ovb.name
+    name = "keystone"
+    charm {
+        name = "keystone"
+        channel = "yoga/stable"
+    }
+
+    units = 1
+    placement = "lxd:${local.ovb_one_id}"
+}
+
+resource "juju_application" "keystone_mysql_router" {
+    model = juju_model.ovb.name
+    name = "keystone-mysql-router"
+    charm {
+        name = "mysql-router"
+        channel = "8.0/stable"
+    }
+
+    units = 0 // Subordinate charms cannot have units
+    placement = juju_application.keystone.placement
+}
+
+resource "juju_integration" "keystone_mysql_router_db_router" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.keystone_mysql_router.name
+        endpoint = "db-router"
+    }
+
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+        endpoint = "db-router"
+    }
+}
+
+resource "juju_integration" "keystone_mysql_router_shared_db" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.keystone_mysql_router.name
+        endpoint = "shared-db"
+    }
+
+    application {
+        name = juju_application.keystone.name
+        endpoint = "shared-db"
+    }
+}
+
+resource "juju_integration" "keystone_neutron_api" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.keystone.name
+        endpoint = "identity-service"
+    }
+
+    application {
+        name = juju_application.neutron_api.name
+        endpoint = "identity-service"
+    }
+}
+
+resource "juju_integration" "keystone_vault_certificates" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.keystone.name
+        endpoint = "certificates"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
+}
