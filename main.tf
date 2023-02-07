@@ -609,3 +609,92 @@ resource "juju_integration" "nova_cloud_controller_vault" {
         endpoint = "certificates"
     }
 }
+
+resource "juju_application" "placement" {
+    model = juju_model.ovb.name
+    name = "placement"
+    charm {
+        name = "placement"
+        channel = "yoga/stable"
+    }
+
+    units = 1
+    placement = "lxd:${local.ovb_four_id}"
+}
+
+resource "juju_application" "placement_mysql_router" {
+    model = juju_model.ovb.name
+    name = "placement-mysql-router"
+    charm {
+        name = "mysql-router"
+        channel = "8.0/stable"
+    }
+
+    units = 0
+    placement = juju_application.placement.placement
+}
+
+resource "juju_integration" "placement_mysql_router_db_router" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.placement_mysql_router.name
+        endpoint = "db-router"
+    }
+
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+        endpoint = "db-router"
+    }
+}
+
+resource "juju_integration" "placement_mysql_router_shared_db" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.placement_mysql_router.name
+        endpoint = "shared-db"
+    }
+
+    application {
+        name = juju_application.placement.name
+        endpoint = "shared-db"
+    }
+}
+
+resource "juju_integration" "placement_keystone" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.placement.name
+        endpoint = "identity-service"
+    }
+
+    application {
+        name = juju_application.keystone.name
+        endpoint = "identity-service"
+    }
+}
+
+resource "juju_integration" "placement_nova_cloud_controller" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.placement.name
+        endpoint = "placement"
+    }
+
+    application {
+        name = juju_application.nova_cloud_controller.name
+        endpoint = "placement"
+    }
+}
+
+resource "juju_integration" "placement_vault" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.placement.name
+        endpoint = "certificates"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
+}
