@@ -50,3 +50,18 @@ resource "juju_machine" "ovb_four" {
     name = "ovb-four"
     constraints = "tags=compute"
 }
+
+resource "juju_application" "ceph_osds" {
+    model = juju_model.ovb.name
+    charm {
+        name = "ceph-osd"
+        channel = "quincy/stable"
+        series = "jammy"
+    }
+    config = {
+        osd-devices = "/dev/vdb"
+        source = "distro"
+    }
+    units = 4
+    placement = join(",", [split(":", juju_machine.ovb_one.id)[1], split(":", juju_machine.ovb_two.id)[1], split(":", juju_machine.ovb_three.id)[1], split(":", juju_machine.ovb_four.id)[1]])
+}
