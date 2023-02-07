@@ -337,3 +337,41 @@ resource "juju_integration" "ovn_chassis_vault" {
         endpoint = "certificates"
     }
 }
+
+resource "juju_application" "neutron_api_mysql_router" {
+    model = juju_model.ovb.name
+    name = "neutron-api-mysql-router"
+    charm {
+        name = "mysql-router"
+        channel = "8.0/stable"
+    }
+
+    units = 0
+    placement = juju_application.neutron_api.placement
+}
+
+resource "juju_integration" "neutron_api_mysql_router_db_router" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.neutron_api_mysql_router.name
+        endpoint = "db-router"
+    }
+
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+        endpoint = "db-router"
+    }
+}
+
+resource "juju_integration" "neutron_api_mysql_router_shared_db" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.neutron_api_mysql_router.name
+        endpoint = "shared-db"
+    }
+
+    application {
+        name = juju_application.neutron_api.name
+        endpoint = "shared-db"
+    }
+}
