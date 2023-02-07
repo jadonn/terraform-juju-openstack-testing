@@ -122,3 +122,40 @@ resource "juju_application" "vault" {
     units = 1
     placement = "lxd:${local.ovb_three_id}"
 }
+
+resource "juju_application" "vault_mysql_router" {
+    model = juju_model.ovb.name
+    name = "vault-mysql-router"
+    charm {
+        name = "mysql-router"
+        channel = "8.0/stable"
+    }
+    units = 0 // Subordinate applications cannot have units
+    placement = juju_application.vault.placement
+}
+
+resource "juju_integration" "vault_db_router" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.vault_mysql_router.name
+        endpoint = "db-router"
+    }
+
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+        endpoint = "db-router"
+    }
+}
+
+resource "juju_integration" "vault_shared_db" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.vault_mysql_router.name
+        endpoint = "shared-db"
+    }
+
+    application {
+        name = juju_application.vault.name
+        endpoint = "shared-db"
+    }
+}
