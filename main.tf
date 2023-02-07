@@ -186,3 +186,21 @@ resource "juju_application" "ovn_central" {
     units = 3
     placement = "lxd:${local.ovb_one_id},lxd:${local.ovb_two_id},lxd:${local.ovb_three_id}"
 }
+
+resource "juju_application" "neutron_api" {
+    model = juju_model.ovb.name
+    name = "neutron-api"
+    charm {
+        name = "neutron-api"
+        channel = "yoga/stable"
+    }
+
+    config = {
+        neutron-security-groups = "true"
+        flat-network-providers = "physnet1"
+        openstack-origin = "distro"
+    }
+
+    units = 1
+    placement = "lxd:${local.ovb_two_id}"
+}
