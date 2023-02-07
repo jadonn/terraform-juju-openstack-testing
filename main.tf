@@ -105,3 +105,20 @@ resource "juju_application" "mysql_innodb_cluster" {
     units = 3
     placement = "${local.ovb_one_id},${local.ovb_two_id},${local.ovb_three_id}"
 }
+
+resource "juju_application" "vault" {
+    model = juju_model.ovb.name
+    name = "vault"
+    charm {
+        name = "vault"
+        channel = "1.7/stable"
+    }
+
+    config = {
+        totally-unsecure-auto-unlock = "true"
+        auto-generate-root-ca-cert = "true"
+    }
+
+    units = 1
+    placement = "lxd:${local.ovb_three_id}"
+}
