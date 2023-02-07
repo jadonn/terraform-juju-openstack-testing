@@ -159,3 +159,15 @@ resource "juju_integration" "vault_shared_db" {
         endpoint = "shared-db"
     }
 }
+
+resource "juju_integration" "mysql_vault_certificates" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+        endpoint = "certificates"
+    }
+    application {
+        name = juju_application.vault.name
+        endpoint = "certificates"
+    }
+}
