@@ -14,39 +14,44 @@ terraform {
 provider "juju" {
 }
 
+locals {
+    series = "jammy"
+}
+
 resource "juju_model" "ovb" {
     name ="ovb"
 
     cloud {
         name = "maas-ovb"
+        region = "default"
     }
 
 }
 
 resource "juju_machine" "ovb_one" {
     model = juju_model.ovb.name
-    series = "jammy"
+    series = local.series
     name = "ovb-one"
     constraints = "tags=compute"
 }
 
 resource "juju_machine" "ovb_two" {
     model = juju_model.ovb.name
-    series = "jammy"
+    series = local.series
     name = "ovb-two"
     constraints = "tags=compute"
 }
 
 resource "juju_machine" "ovb_three" {
     model = juju_model.ovb.name
-    series = "jammy"
+    series = local.series
     name = "ovb-three"
     constraints = "tags=compute"
 }
 
 resource "juju_machine" "ovb_four" {
     model = juju_model.ovb.name
-    series = "jammy"
+    series = local.series
     name = "ovb-four"
     constraints = "tags=compute"
 }
@@ -63,7 +68,7 @@ resource "juju_application" "ceph_osds" {
     charm {
         name = "ceph-osd"
         channel = "quincy/stable"
-        series = "jammy"
+        series = local.series
     }
     config = {
         osd-devices = "/dev/vdb"
@@ -78,7 +83,7 @@ resource "juju_application" "nova_compute" {
     charm {
         name = "nova-compute"
         channel = "yoga/stable"
-        series = "jammy"
+        series = local.series
     }
 
     config = {
@@ -100,6 +105,7 @@ resource "juju_application" "mysql_innodb_cluster" {
     charm {
         name = "mysql-innodb-cluster"
         channel = "8.0/stable"
+        series = local.series
     }
 
     units = 3
@@ -112,6 +118,7 @@ resource "juju_application" "vault" {
     charm {
         name = "vault"
         channel = "1.7/stable"
+        series = local.series
     }
 
     config = {
@@ -129,6 +136,7 @@ resource "juju_application" "vault_mysql_router" {
     charm {
         name = "mysql-router"
         channel = "8.0/stable"
+        series = local.series
     }
     units = 0 // Subordinate applications cannot have units
     placement = juju_application.vault.placement
@@ -178,6 +186,7 @@ resource "juju_application" "ovn_central" {
     charm {
         name = "ovn-central"
         channel = "22.03/stable"
+        series = local.series
     }
 
     config = {
@@ -193,6 +202,7 @@ resource "juju_application" "neutron_api" {
     charm {
         name = "neutron-api"
         channel = "yoga/stable"
+        series = local.series
     }
 
     config = {
@@ -211,6 +221,7 @@ resource "juju_application" "neutron_api_plugin_ovn" {
     charm {
         name = "neutron-api-plugin-ovn"
         channel = "yoga/stable"
+        series = local.series
     }
 
     units = 0 // Subordinate charm applications cannot have units
@@ -223,6 +234,7 @@ resource "juju_application" "ovn_chassis" {
     charm {
         name = "ovn-chassis"
         channel = "22.03/stable"
+        series = local.series
     }
 
     config = {
@@ -344,6 +356,7 @@ resource "juju_application" "neutron_api_mysql_router" {
     charm {
         name = "mysql-router"
         channel = "8.0/stable"
+        series = local.series
     }
 
     units = 0
@@ -382,6 +395,7 @@ resource "juju_application" "keystone" {
     charm {
         name = "keystone"
         channel = "yoga/stable"
+        series = local.series
     }
 
     units = 1
@@ -394,6 +408,7 @@ resource "juju_application" "keystone_mysql_router" {
     charm {
         name = "mysql-router"
         channel = "8.0/stable"
+        series = local.series
     }
 
     units = 0 // Subordinate charms cannot have units
@@ -458,6 +473,7 @@ resource "juju_application" "rabbitmq" {
     charm {
         name = "rabbitmq-server"
         channel = "3.9/stable"
+        series = local.series
     }
 
     units = 1
@@ -496,6 +512,7 @@ resource "juju_application" "nova_cloud_controller" {
     charm {
         name = "nova-cloud-controller"
         channel = "yoga/stable"
+        series = local.series
     }
 
     config = {
@@ -513,6 +530,7 @@ resource "juju_application" "ncc_mysql_router" {
     charm {
         name = "mysql-router"
         channel = "8.0/stable"
+        series = local.series
     }
 
     units = 0
@@ -616,6 +634,7 @@ resource "juju_application" "placement" {
     charm {
         name = "placement"
         channel = "yoga/stable"
+        series = local.series
     }
 
     units = 1
@@ -628,6 +647,7 @@ resource "juju_application" "placement_mysql_router" {
     charm {
         name = "mysql-router"
         channel = "8.0/stable"
+        series = local.series
     }
 
     units = 0
@@ -705,6 +725,7 @@ resource "juju_application" "openstack_dashboard" {
     charm {
         name = "openstack-dashboard"
         channel = "yoga/stable"
+        series = local.series
     }
 
     units = 1
@@ -717,6 +738,7 @@ resource "juju_application" "openstack_dashboard_mysql_router" {
     charm {
         name = "mysql-router"
         channel = "8.0/stable"
+        series = local.series
     }
 
     units = 0
@@ -781,6 +803,7 @@ resource "juju_application" "glance" {
     charm {
         name = "glance"
         channel = "yoga/stable"
+        series = local.series
     }
 
     units = 1
@@ -793,6 +816,7 @@ resource "juju_application" "glance_mysql_router" {
     charm {
         name = "mysql-router"
         channel = "8.0/stable"
+        series = local.series
     }
 
     units = 0
@@ -883,6 +907,7 @@ resource "juju_application" "ceph_mon" {
     charm {
         name = "ceph-mon"
         channel = "quincy/stable"
+        series = local.series
     }
 
     units = 3
@@ -934,6 +959,7 @@ resource "juju_application" "cinder" {
     charm {
         name = "cinder"
         channel = "yoga/stable"
+        series = local.series
     }
 
     config = {
@@ -952,6 +978,7 @@ resource "juju_application" "cinder_mysql_router" {
     charm {
         name = "mysql-router"
         channel = "8.0/stable"
+        series = local.series
     }
 
     units = 0
@@ -1055,6 +1082,7 @@ resource "juju_application" "cinder_ceph" {
     charm {
         name = "cinder-ceph"
         channel = "yoga/stable"
+        series = local.series
     }
 
     units = 0
@@ -1106,6 +1134,7 @@ resource "juju_application" "ceph_radosgw" {
     charm {
         name = "ceph-radosgw"
         channel = "quincy/stable"
+        series = local.series
     }
 
     units = 1
