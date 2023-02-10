@@ -8,12 +8,26 @@ terraform {
             source = "terraform-provider-openstack/openstack"
             version = "~> 1.48.0"
         }
+        maas = {
+            source = "anyonlabs/maas"
+            version = "~>1.0"
+        }
     }
 }
 
 provider "juju" {}
 
 provider "openstack" {}
+
+variable "MAAS_API_KEY" {}
+
+variable "MAAS_API_URL" {}
+
+provider "maas" {
+    api_version = "2.0"
+    api_key = var.MAAS_API_KEY
+    api_url = var.MAAS_API_URL
+}
 
 locals {
     baremetal_network_name = "baremetal"
