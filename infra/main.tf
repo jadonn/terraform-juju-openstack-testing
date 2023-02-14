@@ -23,6 +23,10 @@ variable "MAAS_API_KEY" {}
 
 variable "MAAS_API_URL" {}
 
+variable "IPMI_USER" {}
+
+variable "IPMI_PASSWORD" {}
+
 provider "maas" {
     api_version = "2.0"
     api_key = var.MAAS_API_KEY
@@ -131,8 +135,12 @@ resource "openstack_compute_instance_v2" "compute" {
     }
 }
 
+locals {
+    machines = {for index, value in concat(openstack_compute_instance_v2.control_plane, openstack_compute_instance_v2.storage, openstack_compute_instance_v2.compute): index => value}
+}
+
 resource "null_resource" "configure_vbmc" {
-    for_each = {for index, value in concat(openstack_compute_instance_v2.control_plane, openstack_compute_instance_v2.storage, openstack_compute_instance_v2.compute): index => value}
+    for_each = local.machines
 
     connection {
         type = "ssh"
@@ -168,4 +176,15 @@ resource "null_resource" "configure_vbmc" {
             "sudo systemctl start bmc-${replace(each.value.name, "_", "-")}.service"
         ]
     }
+}
+
+resource "maas_machine" "virtual_baremetal_machine" {
+    for_each = local.machines
+    power_type = "ipmi"
+    power_parameters = {
+        power_address = "${openstack_compute_instance_v2.bmc_terraform.access_ip_v4}:${sum([6000, each.key])}"
+        power_user = var.IPMI_USER
+        power_pass = var.IPMI_PASSWORD
+    }
+    pxe_mac_address = ""
 }
