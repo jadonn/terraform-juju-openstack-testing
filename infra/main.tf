@@ -178,3 +178,14 @@ resource "null_resource" "config_maas" {
         command = "maas admin machine update $(maas admin machines read mac_address=${each.value.network[0].mac}) hostname=${each.value.name} power_type=ipmi power_parameters_power_address=${openstack_compute_instance_v2.bmc_terraform.access_ip_v4}:${sum([6000, each.key])} power_parameters_power_user=${var.IPMI_USER} power_parameters_power_pass=${var.IPMI_PASSWORD}"
     }
 }
+
+resource "null_resource" "add_storage_tags" {
+    for_each = {for index, value in openstack_compute_instance_v2.storage : index => value}
+    provisioner "local-exec" {
+        command = "maas login admin ${var.MAAS_API_URL} ${var.MAAS_API_KEY}"
+    }
+
+    provisioner "local-exec" {
+        command = "maas admin tag update-nodes storage add=$(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]')"
+    }
+}
