@@ -200,3 +200,15 @@ resource "null_resource" "add_compute_tags" {
         command = "maas admin tag update-nodes compute add=$(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]')"
     }
 }
+
+
+resource "null_resource" "add_control_plane_tags" {
+    for_each = {for index, value in openstack_compute_instance_v2.control_plane : index => value}
+    provisioner "local-exec" {
+        command = "maas login admin ${var.MAAS_API_URL} ${var.MAAS_API_KEY}"
+    }
+
+    provisioner "local-exec" {
+        command = "maas admin tag update-nodes control_plane add=$(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]')"
+    }
+}
