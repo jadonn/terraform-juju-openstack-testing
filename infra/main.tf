@@ -167,3 +167,14 @@ resource "null_resource" "configure_vbmc" {
         ]
     }
 }
+
+resource "null_resource" "config_maas" {
+    for_each = local.machines
+    provisioner "local-exec" {
+        command = "maas login admin ${var.MAAS_API_URL} ${var.MAAS_API_KEY}"
+    }
+
+    provisioner "local-exec" {
+        command = "maas admin machine update $(maas admin machines read mac_address=${each.value.network[0].mac}) hostname=${each.value.name} power_type=ipmi power_parameters_power_address=${openstack_compute_instance_v2.bmc_terraform.access_ip_v4}:${sum([6000, each.key])} power_parameters_power_user=${var.IPMI_USER} power_parameters_power_pass=${var.IPMI_PASSWORD}"
+    }
+}
