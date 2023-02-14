@@ -212,3 +212,14 @@ resource "null_resource" "add_control_plane_tags" {
         command = "maas admin tag update-nodes control_plane add=$(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]')"
     }
 }
+
+resource "null_resource" "commission_machines" {
+    for_each = local.machines
+    provisioner "local-exec" {
+        command = "maas login admin ${var.MAAS_API_URL} ${var.MAAS_API_KEY}"
+    }
+
+    provisioner "local-exec" {
+        command = "maas admin machine commission $(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]')"
+    }
+}
