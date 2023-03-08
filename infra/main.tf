@@ -29,21 +29,9 @@ locals {
 }
 
 locals {
-  control_plane_machines_count = 3
-  control_plane_flavor = "m1.small"
-  control_plane_image = local.ipxe_image_name
-}
-
-locals {
-    storage_machines_count = 4
-    storage_machines_flavor = "m1.medium"
-    storage_machines_image = local.ipxe_image_name
-}
-
-locals {
-    compute_machines_count = 3
-    compute_machines_flavor = "m1.xxlarge"
-    compute_machines_image = local.ipxe_image_name
+    hyperconverged_machines_count = 3
+    hyperconverged_machines_flavor = "m1.xxlarge"
+    hyperconverged_machines_image = local.ipxe_image_name
 }
 
 resource "openstack_compute_instance_v2" "bmc_terraform" {
@@ -80,41 +68,11 @@ resource "openstack_compute_instance_v2" "bmc_terraform" {
     }
 }
 
-resource "openstack_compute_instance_v2" "control_plane" {
-    count = local.control_plane_machines_count
-    name = "baremetal_control_plane_${count.index}"
-    image_name = local.control_plane_image
-    flavor_name = local.control_plane_flavor
-    network {
-        name = local.baremetal_network_name
-    }
-    lifecycle {
-        ignore_changes = [
-            power_state,
-        ]
-    }
-}
-
-resource "openstack_compute_instance_v2" "storage" {
-    count = local.storage_machines_count
-    name = "baremetal_storage_${count.index}"
-    image_name = local.storage_machines_image
-    flavor_name = local.storage_machines_flavor
-    network {
-        name = local.baremetal_network_name
-    }
-    lifecycle {
-        ignore_changes = [
-            power_state,
-        ]
-    }
-}
-
-resource "openstack_compute_instance_v2" "compute" {
-    count = local.compute_machines_count
-    name = "baremetal_compute_${count.index}"
-    image_name = local.compute_machines_image
-    flavor_name = local.compute_machines_flavor
+resource "openstack_compute_instance_v2" "hyperconverged" {
+    count = local.hyperconverged_machines_count
+    name = "baremetal_hyperconverged_${count.index}"
+    image_name = local.hyperconverged_machines_image
+    flavor_name = local.hyperconverged_machines_flavor
     network {
         name = local.baremetal_network_name
     }
@@ -126,7 +84,7 @@ resource "openstack_compute_instance_v2" "compute" {
 }
 
 locals {
-    machines = {for index, value in concat(openstack_compute_instance_v2.control_plane, openstack_compute_instance_v2.storage, openstack_compute_instance_v2.compute): index => value}
+    machines = {for index, value in concat(openstack_compute_instance_v2.hyperconverged): index => value}
 }
 
 resource "null_resource" "configure_vbmc" {
@@ -175,45 +133,25 @@ resource "null_resource" "config_maas" {
     }
 
     provisioner "local-exec" {
-        command = "maas admin machine update $(maas admin machines read mac_address=${each.value.network[0].mac}) hostname=${each.value.name} power_type=ipmi power_parameters_power_address=${openstack_compute_instance_v2.bmc_terraform.access_ip_v4}:${sum([6000, each.key])} power_parameters_power_user=${var.IPMI_USER} power_parameters_power_pass=${var.IPMI_PASSWORD}"
+        command = "maas admin machine update $(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]') hostname=${replace(each.value.name, "_", "-")} power_type=ipmi power_parameters_power_address=${openstack_compute_instance_v2.bmc_terraform.access_ip_v4}:${sum([6000, each.key])} power_parameters_power_user=${var.IPMI_USER} power_parameters_power_pass=${var.IPMI_PASSWORD}"
     }
 }
 
-resource "null_resource" "add_storage_tags" {
-    for_each = {for index, value in openstack_compute_instance_v2.storage : index => value}
+resource "null_resource" "add_hyperconverged_tags" {
+    for_each = {for index, value in openstack_compute_instance_v2.hyperconverged : index => value}
     provisioner "local-exec" {
         command = "maas login admin ${var.MAAS_API_URL} ${var.MAAS_API_KEY}"
     }
 
     provisioner "local-exec" {
-        command = "maas admin tag update-nodes storage add=$(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]')"
-    }
-}
-
-resource "null_resource" "add_compute_tags" {
-    for_each = {for index, value in openstack_compute_instance_v2.compute : index => value}
-    provisioner "local-exec" {
-        command = "maas login admin ${var.MAAS_API_URL} ${var.MAAS_API_KEY}"
-    }
-
-    provisioner "local-exec" {
-        command = "maas admin tag update-nodes compute add=$(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]')"
-    }
-}
-
-
-resource "null_resource" "add_control_plane_tags" {
-    for_each = {for index, value in openstack_compute_instance_v2.control_plane : index => value}
-    provisioner "local-exec" {
-        command = "maas login admin ${var.MAAS_API_URL} ${var.MAAS_API_KEY}"
-    }
-
-    provisioner "local-exec" {
-        command = "maas admin tag update-nodes control_plane add=$(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]')"
+        command = "maas admin tag update-nodes hyperconverged add=$(maas admin machines read mac_address=${each.value.network[0].mac} | jq -r '(.[]|[.system_id])[0]')"
     }
 }
 
 resource "null_resource" "commission_machines" {
+    depends_on = [
+      null_resource.config_maas
+    ]
     for_each = local.machines
     provisioner "local-exec" {
         command = "maas login admin ${var.MAAS_API_URL} ${var.MAAS_API_KEY}"
