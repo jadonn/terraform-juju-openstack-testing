@@ -28,39 +28,16 @@ resource "juju_model" "ovb" {
 
 }
 
-resource "juju_machine" "ovb_one" {
+resource "juju_machine" "hyperconverged" {
+    count = 3
     model = juju_model.ovb.name
     series = local.series
-    name = "ovb-one"
-    constraints = "tags=compute"
-}
-
-resource "juju_machine" "ovb_two" {
-    model = juju_model.ovb.name
-    series = local.series
-    name = "ovb-two"
-    constraints = "tags=compute"
-}
-
-resource "juju_machine" "ovb_three" {
-    model = juju_model.ovb.name
-    series = local.series
-    name = "ovb-three"
-    constraints = "tags=compute"
-}
-
-resource "juju_machine" "ovb_four" {
-    model = juju_model.ovb.name
-    series = local.series
-    name = "ovb-four"
-    constraints = "tags=compute"
+    name = "hyperconverged-${count.index}"
+    constraints = "tags=hyperconverged"
 }
 
 locals {
-    ovb_one_id = split(":", juju_machine.ovb_one.id)[1]
-    ovb_two_id = split(":", juju_machine.ovb_two.id)[1]
-    ovb_three_id = split(":", juju_machine.ovb_three.id)[1]
-    ovb_four_id = split(":", juju_machine.ovb_four.id)[1]
+    hyperconverged_juju_ids = [for machine in juju_machine.hyperconverged: split(":", machine.id)[1]]
 }
 
 resource "juju_application" "ceph_osds" {
@@ -74,8 +51,8 @@ resource "juju_application" "ceph_osds" {
         osd-devices = "/dev/vdb"
         source = "distro"
     }
-    units = 4
-    placement = join(",", [split(":", juju_machine.ovb_one.id)[1], split(":", juju_machine.ovb_two.id)[1], split(":", juju_machine.ovb_three.id)[1], split(":", juju_machine.ovb_four.id)[1]])
+    units = 3
+    placement = join(",", local.hyperconverged_juju_ids)
 }
 
 resource "juju_application" "nova_compute" {
@@ -96,7 +73,7 @@ resource "juju_application" "nova_compute" {
     }
     
     units = 3
-    placement = join(",", [local.ovb_one_id, local.ovb_two_id, local.ovb_three_id])
+    placement = join(",", local.hyperconverged_juju_ids)
 }
 
 resource "juju_application" "mysql_innodb_cluster" {
@@ -109,7 +86,7 @@ resource "juju_application" "mysql_innodb_cluster" {
     }
 
     units = 3
-    placement = "${local.ovb_one_id},${local.ovb_two_id},${local.ovb_three_id}"
+    placement = join(",", local.hyperconverged_juju_ids)
 }
 
 resource "juju_application" "vault" {
@@ -127,7 +104,7 @@ resource "juju_application" "vault" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_three_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[0]}"
 }
 
 resource "juju_application" "vault_mysql_router" {
@@ -193,7 +170,7 @@ resource "juju_application" "ovn_central" {
         source = "distro"
     }
     units = 3
-    placement = "lxd:${local.ovb_one_id},lxd:${local.ovb_two_id},lxd:${local.ovb_three_id}"
+    placement = join(",", [for id in local.hyperconverged_juju_ids: "lxd:${id}"])
 }
 
 resource "juju_application" "neutron_api" {
@@ -212,7 +189,7 @@ resource "juju_application" "neutron_api" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_two_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
 }
 
 resource "juju_application" "neutron_api_plugin_ovn" {
@@ -399,7 +376,7 @@ resource "juju_application" "keystone" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_one_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[2]}"
 }
 
 resource "juju_application" "keystone_mysql_router" {
@@ -477,7 +454,7 @@ resource "juju_application" "rabbitmq" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_four_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[0]}"
 }
 
 resource "juju_integration" "rabbitmq_neutron_api" {
@@ -521,7 +498,7 @@ resource "juju_application" "nova_cloud_controller" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_four_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
 }
 
 resource "juju_application" "ncc_mysql_router" {
@@ -638,7 +615,7 @@ resource "juju_application" "placement" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_four_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[2]}"
 }
 
 resource "juju_application" "placement_mysql_router" {
@@ -729,7 +706,7 @@ resource "juju_application" "openstack_dashboard" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_three_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[0]}"
 }
 
 resource "juju_application" "openstack_dashboard_mysql_router" {
@@ -807,7 +784,7 @@ resource "juju_application" "glance" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_four_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
 }
 
 resource "juju_application" "glance_mysql_router" {
@@ -911,7 +888,7 @@ resource "juju_application" "ceph_mon" {
     }
 
     units = 3
-    placement = "lxd:${local.ovb_one_id},lxd:${local.ovb_two_id},lxd:${local.ovb_three_id}"
+    placement = join(",", [for id in local.hyperconverged_juju_ids: "lxd:${id}"])
 }
 
 resource "juju_integration" "ceph_mon_ceph_osd" {
@@ -969,7 +946,7 @@ resource "juju_application" "cinder" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_two_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[2]}"
 }
 
 resource "juju_application" "cinder_mysql_router" {
@@ -1138,7 +1115,7 @@ resource "juju_application" "ceph_radosgw" {
     }
 
     units = 1
-    placement = "lxd:${local.ovb_one_id}"
+    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
 }
 
 resource "juju_integration" "ceph_radosgw_ceph_mon" {
