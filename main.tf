@@ -16,6 +16,7 @@ provider "juju" {
 
 locals {
     series = "jammy"
+    openstack_channel = "yoga/stable"
 }
 
 resource "juju_model" "ovb" {
@@ -1128,5 +1129,110 @@ resource "juju_integration" "ceph_radosgw_ceph_mon" {
     application {
         name = juju_application.ceph_mon.name
         endpoint = "radosgw"
+    }
+}
+
+resource "juju_application" "designate" {
+    model = juju_model.ovb.name
+    name = "designate"
+    charm {
+        name = "designate"
+        channel = local.openstack_channel
+        series = local.series
+    }
+    config {
+        nameservers = "ns1.not-a-real-domain.com. ns2.not-a-real-domain.com."
+    }
+    units = 1
+    placement = "lxd:${local.hyperconverged_juju_ids[2]}"
+}
+
+resource "juju_application" "designate_bind" {
+    model = juju_model.ovb.name
+    name = "designate-bind"
+    charm {
+        name = "designate-bind"
+        channel = local.openstack_channel
+        series = local.series
+    }
+    units = 1
+    placement = juju_application.designate.placement
+}
+
+resource "juju_integration" "designate_designate_bind" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.designate.name
+    }
+
+    application {
+        name = juju_application.designate_bind.name
+    }
+}
+
+resource "juju_application" "memcached" {
+    model = juju_model.ovb.name
+    name = "memcached"
+    charm {
+        name = "memcached"
+        channel = "latest/stable"
+        series = local.series
+    }
+    units = 1
+    placement = "lxd:${local.hyperconverged_juju_ids[0]}"
+}
+
+resource "juju_integration" "designate_memcached" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.designate.name
+    }
+
+    application {
+        name = juju_application.memcached.name
+    }
+}
+
+resource "juju_integration" "designate_mysql" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.designate.name
+    }
+
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+    }
+}
+
+resource "juju_integration" "designate_rabbitmq" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.designate.name
+    }
+
+    application {
+        name = juju_application.rabbitmq.name
+    }
+}
+
+resource "juju_integration" "designate_keystone" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.designate.name
+    }
+
+    application {
+        name = juju_application.keystone.name
+    }
+}
+
+resource "juju_integration" "designate_neutron_api" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.designate.name
+    }
+
+    application {
+        name = juju_application.neutron_api.name
     }
 }
