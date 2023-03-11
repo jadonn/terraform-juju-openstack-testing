@@ -1236,3 +1236,80 @@ resource "juju_integration" "designate_neutron_api" {
         name = juju_application.neutron_api.name
     }
 }
+
+resource "juju_application" "manila" {
+    model = juju_model.ovb.name
+    name = "manila"
+    charm {
+        name = "manila"
+        channel = local.openstack_channel
+        series = local.series
+    }
+    config = {
+        default-share-backend = "generic"
+    }
+    units = 1
+    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
+}
+
+resource "juju_application" "manila_generic" {
+    model = juju_model.ovb.name
+    name = "manila-generic"
+    charm {
+        name = "manila-generic"
+        channel = local.openstack_channel
+        series = local.series
+    }
+    config = {
+        driver-service-instance-flavor-id = "1000" // This needs a value of a real image ID
+    }
+    units = 0 // Subordinate applications cannot have units
+    placement = juju_application.manila.placement
+}
+
+resource "juju_integration" "manila_mysql" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.manila.name
+    }
+
+    application {
+        name = juju_application.mysql_innodb_cluster.name
+    }
+}
+
+resource "juju_integration" "manila_rabbitmq" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.manila.name
+    }
+
+    application {
+        name = juju_application.rabbitmq.name
+    }
+}
+
+resource "juju_integration" "manila_keystone" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.manila.name
+    }
+    
+    application {
+        name = juju_application.keystone.name
+    }
+}
+
+resource "juju_integration" "manila_manila_generic" {
+    model = juju_model.ovb.name
+    application {
+        name = juju_application.manila.name
+        endpoint = "manila-plugin"
+    }
+
+    application {
+        name = juju_application.manila_generic.name
+        endoint = "manila-plugin"
+    }
+}
+
