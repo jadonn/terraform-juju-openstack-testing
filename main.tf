@@ -106,6 +106,12 @@ locals {
     }
 }
 
+locals {
+    rabbitmq = {
+        channel = "3.9/stable"
+    }
+}
+
 resource "juju_model" "ovb" {
     name = local.model.name
 
@@ -515,7 +521,7 @@ resource "juju_application" "rabbitmq" {
     name = "rabbitmq-server"
     charm {
         name = "rabbitmq-server"
-        channel = "3.9/stable"
+        channel = local.rabbitmq.channel
         series = local.series
     }
 
