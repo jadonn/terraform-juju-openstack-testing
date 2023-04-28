@@ -27,6 +27,7 @@ locals {
 locals {
     openstack = {
         channel = "yoga/stable"
+        origin = "distro"
     }
 }
 
@@ -35,6 +36,16 @@ locals {
         channel = "quincy/stable"
         osd_devices = "/dev/vdb"
         source = "distro"
+    }
+}
+
+locals {
+    nova = {
+        config_flags = "default_ephemeral_format=ext4"
+        enable_live_migration = "true"
+        enable_resize = "true"
+        migration_auth_type = "ssh"
+        virt_type = "qemu"
     }
 }
 
@@ -84,12 +95,12 @@ resource "juju_application" "nova_compute" {
     }
 
     config = {
-        config-flags = "default_ephemeral_format=ext4"
-        enable-live-migration = "true"
-        enable-resize = "true"
-        migration-auth-type = "ssh"
-        virt-type = "qemu"
-        openstack-origin = "distro"
+        config-flags = local.nova.config_flags
+        enable-live-migration = local.nova.enable_live_migration
+        enable-resize = local.nova.enable_resize
+        migration-auth-type = local.nova.migration_auth_type
+        virt-type = local.nova.virt_type
+        openstack-origin = local.openstack.origin
     }
     
     units = 3
