@@ -11,16 +11,19 @@ provider "juju" {
 }
 
 locals {
+    model_name = "ovb"
+    cloud_name = "maas-ovb"
+    cloud_region = "default"
     series = "jammy"
     openstack_channel = "yoga/stable"
 }
 
 resource "juju_model" "ovb" {
-    name ="ovb"
+    name = local.model_name
 
     cloud {
-        name = "maas-ovb"
-        region = "default"
+        name = local.cloud_name
+        region = local.cloud_region
     }
 
 }
