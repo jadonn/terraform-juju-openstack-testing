@@ -79,7 +79,7 @@ resource "juju_application" "nova_compute" {
     model = juju_model.ovb.name
     charm {
         name = "nova-compute"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
@@ -198,7 +198,7 @@ resource "juju_application" "neutron_api" {
     name = "neutron-api"
     charm {
         name = "neutron-api"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
@@ -217,7 +217,7 @@ resource "juju_application" "neutron_api_plugin_ovn" {
     name = "neutron-api-plugin-ovn"
     charm {
         name = "neutron-api-plugin-ovn"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
@@ -391,7 +391,7 @@ resource "juju_application" "keystone" {
     name = "keystone"
     charm {
         name = "keystone"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
@@ -508,7 +508,7 @@ resource "juju_application" "nova_cloud_controller" {
     name = "nova-cloud-controller"
     charm {
         name = "nova-cloud-controller"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
@@ -630,7 +630,7 @@ resource "juju_application" "placement" {
     name = "placement"
     charm {
         name = "placement"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
@@ -721,7 +721,7 @@ resource "juju_application" "openstack_dashboard" {
     name = "openstack-dashboard"
     charm {
         name = "openstack-dashboard"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
@@ -799,7 +799,7 @@ resource "juju_application" "glance" {
     name = "glance"
     charm {
         name = "glance"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
@@ -955,7 +955,7 @@ resource "juju_application" "cinder" {
     name = "cinder"
     charm {
         name = "cinder"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
@@ -1078,7 +1078,7 @@ resource "juju_application" "cinder_ceph" {
     name = "cinder-ceph"
     charm {
         name = "cinder-ceph"
-        channel = "yoga/stable"
+        channel = local.openstack.channel
         series = local.series
     }
 
