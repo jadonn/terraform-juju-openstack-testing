@@ -165,16 +165,28 @@ locals {
     hyperconverged_juju_ids = [for machine in juju_machine.hyperconverged: split(":", machine.id)[1]]
 }
 
-resource "juju_application" "ceph_osds" {
+module "ceph_cluster" {
+    source = "./ceph"
     model = juju_model.ovb.name
-    charm {
-        name = "ceph-osd"
-        channel = local.ceph.channel
-        series = local.series
+    channel = local.ceph.channel
+    series = local.series
+    config = {
+        osds = local.ceph.config
     }
-    config = local.ceph.config
-    units = 3
-    placement = join(",", local.hyperconverged_juju_ids)
+    units = {
+        osds = 3
+        mons = 3
+        rgw = 1
+    }
+    placement = {
+        osds = join(",", local.hyperconverged_juju_ids)
+        mons = join(",", [for id in local.hyperconverged_juju_ids: "lxd:${id}"])
+        rgw = "lxd:${local.hyperconverged_juju_ids[1]}"
+    }
+    relation_names = {
+        nova = juju_application.nova_compute.name
+        glance = juju_application.glance.name
+    }
 }
 
 resource "juju_application" "nova_compute" {
@@ -978,57 +990,6 @@ resource "juju_integration" "glance_vault" {
     }
 }
 
-resource "juju_application" "ceph_mon" {
-    model = juju_model.ovb.name
-    name = "ceph-mon"
-    charm {
-        name = "ceph-mon"
-        channel = local.ceph.channel
-        series = local.series
-    }
-
-    units = 3
-    placement = join(",", [for id in local.hyperconverged_juju_ids: "lxd:${id}"])
-}
-
-resource "juju_integration" "ceph_mon_ceph_osd" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ceph_mon.name
-        endpoint = "osd"
-    }
-
-    application {
-        name = juju_application.ceph_osds.name
-        endpoint = "mon"
-    }
-}
-
-resource "juju_integration" "ceph_mon_nova_compute" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ceph_mon.name
-        endpoint = "client"
-    }
-
-    application {
-        name = juju_application.nova_compute.name
-        endpoint = "ceph"
-    }
-}
-
-resource "juju_integration" "ceph_mon_glance" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ceph_mon.name
-        endpoint = "client"
-    }
-
-    application {
-        name = juju_application.glance.name
-        endpoint = "ceph"
-    }
-}
 
 resource "juju_application" "cinder" {
     model = juju_model.ovb.name
@@ -1198,32 +1159,6 @@ resource "juju_integration" "cinder_ceph_nova_compute" {
     application {
         name = juju_application.nova_compute.name
         endpoint = "ceph-access"
-    }
-}
-
-resource "juju_application" "ceph_radosgw" {
-    model = juju_model.ovb.name
-    name = "ceph-radosgw"
-    charm {
-        name = "ceph-radosgw"
-        channel = local.ceph.channel
-        series = local.series
-    }
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
-}
-
-resource "juju_integration" "ceph_radosgw_ceph_mon" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ceph_radosgw.name
-        endpoint = "mon"
-    }
-
-    application {
-        name = juju_application.ceph_mon.name
-        endpoint = "radosgw"
     }
 }
 
