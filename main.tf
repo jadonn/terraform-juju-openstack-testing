@@ -1136,7 +1136,7 @@ resource "juju_application" "designate" {
         channel = local.openstack_channel
         series = local.series
     }
-    config {
+    config = {
         nameservers = "ns1.not-a-real-domain.com. ns2.not-a-real-domain.com."
     }
     units = 1
