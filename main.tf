@@ -130,6 +130,19 @@ locals {
     }
 }
 
+locals {
+    manila = {
+        config = {
+            default-share-backend = "generic"
+        }
+        generic = {
+            config = {
+                driver-service-instance-flavor-id = "1000" // This needs a value of a real image ID
+            }
+        }
+    }
+}
+
 resource "juju_model" "ovb" {
     name = local.model.name
 
@@ -1325,9 +1338,7 @@ resource "juju_application" "manila" {
         channel = local.openstack.channel
         series = local.series
     }
-    config = {
-        default-share-backend = "generic"
-    }
+    config = local.manila.config
     units = 1
     placement = "lxd:${local.hyperconverged_juju_ids[1]}"
 }
@@ -1340,9 +1351,7 @@ resource "juju_application" "manila_generic" {
         channel = local.openstack.channel
         series = local.series
     }
-    config = {
-        driver-service-instance-flavor-id = "1000" // This needs a value of a real image ID
-    }
+    config = local.manila.generic.config
     units = 0 // Subordinate applications cannot have units
     placement = juju_application.manila.placement
 }
