@@ -86,6 +86,18 @@ locals {
     }
 }
 
+locals {
+    neutron = {
+        api = {
+            config = {
+                neutron-security-groups = "true"
+                flat-network-providers = "physnet1"
+                openstack-origin = "distro"                
+            }
+        }
+    }
+}
+
 resource "juju_model" "ovb" {
     name = local.model.name
 
@@ -235,11 +247,7 @@ resource "juju_application" "neutron_api" {
         series = local.series
     }
 
-    config = {
-        neutron-security-groups = "true"
-        flat-network-providers = "physnet1"
-        openstack-origin = "distro"
-    }
+    config = local.neutron.api.config
 
     units = 1
     placement = "lxd:${local.hyperconverged_juju_ids[1]}"
