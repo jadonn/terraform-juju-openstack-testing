@@ -16,6 +16,9 @@ locals {
     cloud_region = "default"
     series = "jammy"
     openstack_channel = "yoga/stable"
+    ceph_channel = "quincy/stable"
+    ceph_osd_devices = "/dev/vdb"
+    ceph_source = "distro"
 }
 
 resource "juju_model" "ovb" {
@@ -44,12 +47,12 @@ resource "juju_application" "ceph_osds" {
     model = juju_model.ovb.name
     charm {
         name = "ceph-osd"
-        channel = "quincy/stable"
+        channel = local.ceph_channel
         series = local.series
     }
     config = {
-        osd-devices = "/dev/vdb"
-        source = "distro"
+        osd-devices = local.ceph_osd_devices
+        source = local.ceph_source
     }
     units = 3
     placement = join(",", local.hyperconverged_juju_ids)
@@ -883,7 +886,7 @@ resource "juju_application" "ceph_mon" {
     name = "ceph-mon"
     charm {
         name = "ceph-mon"
-        channel = "quincy/stable"
+        channel = local.ceph_channel
         series = local.series
     }
 
@@ -1110,7 +1113,7 @@ resource "juju_application" "ceph_radosgw" {
     name = "ceph-radosgw"
     charm {
         name = "ceph-radosgw"
-        channel = "quincy/stable"
+        channel = local.ceph_channel
         series = local.series
     }
 
