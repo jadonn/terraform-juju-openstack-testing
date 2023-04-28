@@ -69,6 +69,23 @@ locals {
     }
 }
 
+locals {
+    ovn = {
+        channel = "22.03/stable"
+        central = {
+            config = {
+                source = "distro"
+            }
+        }
+        chassis = {
+            config = {
+                bridge-interface-mappings = "br-ex:ens3" // You must update the device name ens3 to whatever your networking device name is
+                ovn-bridge-mappings = "physnet1:br-ex"
+            }
+        }
+    }
+}
+
 resource "juju_model" "ovb" {
     name = local.model.name
 
@@ -200,13 +217,11 @@ resource "juju_application" "ovn_central" {
     name = "ovn-central"
     charm {
         name = "ovn-central"
-        channel = "22.03/stable"
+        channel = local.ovn.channel
         series = local.series
     }
 
-    config = {
-        source = "distro"
-    }
+    config = local.ovn.central.config
     units = 3
     placement = join(",", [for id in local.hyperconverged_juju_ids: "lxd:${id}"])
 }
@@ -248,14 +263,11 @@ resource "juju_application" "ovn_chassis" {
     name = "ovn-chassis"
     charm {
         name = "ovn-chassis"
-        channel = "22.03/stable"
+        channel = local.ovn.channel
         series = local.series
     }
 
-    config = {
-        bridge-interface-mappings = "br-ex:ens3" // You must update the device name ens3 to whatever your networking device name is
-        ovn-bridge-mappings = "physnet1:br-ex"
-    }
+    config = local.ovn.chassis.config
 
     units = 0 // Subordinate charm applications cannot have units
     placement = juju_application.neutron_api.placement
