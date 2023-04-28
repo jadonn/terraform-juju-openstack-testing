@@ -49,6 +49,12 @@ locals {
     }
 }
 
+locals {
+    mysql = {
+        channel = "8.0/stable"
+    }
+}
+
 resource "juju_model" "ovb" {
     name = local.model.name
 
@@ -112,7 +118,7 @@ resource "juju_application" "mysql_innodb_cluster" {
     name = "mysql-innodb-cluster" // Needed the name or you get an error about how application- is an invalid application tag
     charm {
         name = "mysql-innodb-cluster"
-        channel = "8.0/stable"
+        channel = local.mysql.channel
         series = local.series
     }
 
@@ -143,7 +149,7 @@ resource "juju_application" "vault_mysql_router" {
     name = "vault-mysql-router"
     charm {
         name = "mysql-router"
-        channel = "8.0/stable"
+        channel = local.mysql.channel
         series = local.series
     }
     units = 0 // Subordinate applications cannot have units
@@ -363,7 +369,7 @@ resource "juju_application" "neutron_api_mysql_router" {
     name = "neutron-api-mysql-router"
     charm {
         name = "mysql-router"
-        channel = "8.0/stable"
+        channel = local.mysql.channel
         series = local.series
     }
 
@@ -415,7 +421,7 @@ resource "juju_application" "keystone_mysql_router" {
     name = "keystone-mysql-router"
     charm {
         name = "mysql-router"
-        channel = "8.0/stable"
+        channel = local.mysql.channel
         series = local.series
     }
 
@@ -537,7 +543,7 @@ resource "juju_application" "ncc_mysql_router" {
     name = "ncc-mysql-router"
     charm {
         name = "mysql-router"
-        channel = "8.0/stable"
+        channel = local.mysql.channel
         series = local.series
     }
 
@@ -654,7 +660,7 @@ resource "juju_application" "placement_mysql_router" {
     name = "placement-mysql-router"
     charm {
         name = "mysql-router"
-        channel = "8.0/stable"
+        channel = local.mysql.channel
         series = local.series
     }
 
@@ -745,7 +751,7 @@ resource "juju_application" "openstack_dashboard_mysql_router" {
     name = "dashboard-mysql-router"
     charm {
         name = "mysql-router"
-        channel = "8.0/stable"
+        channel = local.mysql.channel
         series = local.series
     }
 
@@ -823,7 +829,7 @@ resource "juju_application" "glance_mysql_router" {
     name = "glance-mysql-router"
     charm {
         name = "mysql-router"
-        channel = "8.0/stable"
+        channel = local.mysql.channel
         series = local.series
     }
 
@@ -985,7 +991,7 @@ resource "juju_application" "cinder_mysql_router" {
     name = "cinder-mysql-router"
     charm {
         name = "mysql-router"
-        channel = "8.0/stable"
+        channel = local.mysql.channel
         series = local.series
     }
 
