@@ -122,6 +122,14 @@ locals {
     }
 }
 
+locals {
+    designate = {
+        config = {
+            nameservers = "ns1.not-a-real-domain.com. ns2.not-a-real-domain.com."
+        }
+    }
+}
+
 resource "juju_model" "ovb" {
     name = local.model.name
 
@@ -1214,9 +1222,7 @@ resource "juju_application" "designate" {
         channel = local.openstack.channel
         series = local.series
     }
-    config = {
-        nameservers = "ns1.not-a-real-domain.com. ns2.not-a-real-domain.com."
-    }
+    config = local.designate.config
     units = 1
     placement = "lxd:${local.hyperconverged_juju_ids[2]}"
 }
