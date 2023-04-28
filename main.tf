@@ -55,6 +55,16 @@ locals {
     }
 }
 
+locals {
+    vault = {
+        channel = "1.7/stable"
+        config = {
+            totally-unsecure-auto-unlock = "true"
+            auto-generate-root-ca-cert = "true"
+        }
+    }
+}
+
 resource "juju_model" "ovb" {
     name = local.model.name
 
@@ -131,14 +141,11 @@ resource "juju_application" "vault" {
     name = "vault"
     charm {
         name = "vault"
-        channel = "1.7/stable"
+        channel = local.vault.channel
         series = local.series
     }
 
-    config = {
-        totally-unsecure-auto-unlock = "true"
-        auto-generate-root-ca-cert = "true"
-    }
+    config = local.vault.config
 
     units = 1
     placement = "lxd:${local.hyperconverged_juju_ids[0]}"
