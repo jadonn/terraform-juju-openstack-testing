@@ -43,12 +43,20 @@ locals {
 
 locals {
     nova = {
-        config = {
-            config_flags = "default_ephemeral_format=ext4"
-            enable_live_migration = "true"
-            enable_resize = "true"
-            migration_auth_type = "ssh"
-            virt_type = "qemu"
+        compute = {
+            config = {
+                config_flags = "default_ephemeral_format=ext4"
+                enable_live_migration = "true"
+                enable_resize = "true"
+                migration_auth_type = "ssh"
+                virt_type = "qemu"
+            }
+        }
+        cloud_controller = {
+            config = {
+                network-manager = "Neutron"
+                openstack-origin = "distro"
+            }
         }
     }
 }
@@ -140,7 +148,7 @@ resource "juju_application" "nova_compute" {
         series = local.series
     }
 
-    config = local.nova.config
+    config = local.nova.compute.config
     
     units = 3
     placement = join(",", local.hyperconverged_juju_ids)
@@ -550,10 +558,7 @@ resource "juju_application" "nova_cloud_controller" {
         series = local.series
     }
 
-    config = {
-        network-manager = "Neutron"
-        openstack-origin = "distro"
-    }
+    config = local.nova.cloud_controller.config
 
     units = 1
     placement = "lxd:${local.hyperconverged_juju_ids[1]}"
