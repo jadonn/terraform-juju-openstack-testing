@@ -1305,7 +1305,7 @@ resource "juju_integration" "manila_manila_generic" {
 
     application {
         name = juju_application.manila_generic.name
-        endoint = "manila-plugin"
+        endpoint = "manila-plugin"
     }
 }
 
