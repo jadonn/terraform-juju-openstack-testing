@@ -112,6 +112,16 @@ locals {
     }
 }
 
+locals {
+    cinder = {
+        config = {
+            block-device = "None"
+            glance-api-version = "2"
+            openstack-origin = "distro"
+        }
+    }
+}
+
 resource "juju_model" "ovb" {
     name = local.model.name
 
@@ -1008,11 +1018,7 @@ resource "juju_application" "cinder" {
         series = local.series
     }
 
-    config = {
-        block-device = "None"
-        glance-api-version = "2"
-        openstack-origin = "distro"
-    }
+    config = local.cinder.config
 
     units = 1
     placement = "lxd:${local.hyperconverged_juju_ids[2]}"
