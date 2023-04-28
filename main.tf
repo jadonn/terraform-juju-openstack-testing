@@ -1,12 +1,8 @@
 terraform {
     required_providers {
         juju = {
-            version = "~> 0.3.1"
+            version = "~> 0.6.0"
             source = "juju/juju"
-        }
-        openstack = {
-            source = "terraform-provider-openstack/openstack"
-            version = "~> 1.48.0"
         }
     }
 }
