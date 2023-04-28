@@ -11,22 +11,39 @@ provider "juju" {
 }
 
 locals {
-    model_name = "ovb"
-    cloud_name = "maas-ovb"
-    cloud_region = "default"
     series = "jammy"
-    openstack_channel = "yoga/stable"
-    ceph_channel = "quincy/stable"
-    ceph_osd_devices = "/dev/vdb"
-    ceph_source = "distro"
+}
+
+locals {
+    model = {
+        name = "ovb"
+        cloud = {
+            name = "maas-ovb"
+            region = "default"
+        }
+    }
+}
+
+locals {
+    openstack = {
+        channel = "yoga/stable"
+    }
+}
+
+locals {
+    ceph = {
+        channel = "quincy/stable"
+        osd_devices = "/dev/vdb"
+        source = "distro"
+    }
 }
 
 resource "juju_model" "ovb" {
-    name = local.model_name
+    name = local.model.name
 
     cloud {
-        name = local.cloud_name
-        region = local.cloud_region
+        name = local.model.cloud.name
+        region = local.model.cloud.region
     }
 
 }
@@ -47,12 +64,12 @@ resource "juju_application" "ceph_osds" {
     model = juju_model.ovb.name
     charm {
         name = "ceph-osd"
-        channel = local.ceph_channel
+        channel = local.ceph.channel
         series = local.series
     }
     config = {
-        osd-devices = local.ceph_osd_devices
-        source = local.ceph_source
+        osd-devices = local.ceph.osd_devices
+        source = local.ceph.source
     }
     units = 3
     placement = join(",", local.hyperconverged_juju_ids)
@@ -886,7 +903,7 @@ resource "juju_application" "ceph_mon" {
     name = "ceph-mon"
     charm {
         name = "ceph-mon"
-        channel = local.ceph_channel
+        channel = local.ceph.channel
         series = local.series
     }
 
@@ -1113,7 +1130,7 @@ resource "juju_application" "ceph_radosgw" {
     name = "ceph-radosgw"
     charm {
         name = "ceph-radosgw"
-        channel = local.ceph_channel
+        channel = local.ceph.channel
         series = local.series
     }
 
@@ -1139,7 +1156,7 @@ resource "juju_application" "designate" {
     name = "designate"
     charm {
         name = "designate"
-        channel = local.openstack_channel
+        channel = local.openstack.channel
         series = local.series
     }
     config = {
@@ -1154,7 +1171,7 @@ resource "juju_application" "designate_bind" {
     name = "designate-bind"
     charm {
         name = "designate-bind"
-        channel = local.openstack_channel
+        channel = local.openstack.channel
         series = local.series
     }
     units = 1
@@ -1244,7 +1261,7 @@ resource "juju_application" "manila" {
     name = "manila"
     charm {
         name = "manila"
-        channel = local.openstack_channel
+        channel = local.openstack.channel
         series = local.series
     }
     config = {
@@ -1259,7 +1276,7 @@ resource "juju_application" "manila_generic" {
     name = "manila-generic"
     charm {
         name = "manila-generic"
-        channel = local.openstack_channel
+        channel = local.openstack.channel
         series = local.series
     }
     config = {
