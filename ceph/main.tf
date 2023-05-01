@@ -7,9 +7,6 @@ terraform {
     }
 }
 
-provider "juju" {
-}
-
 variable "model" {
     type = string
 }
