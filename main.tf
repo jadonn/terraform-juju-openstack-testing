@@ -35,8 +35,12 @@ locals {
     ceph = {
         channel = "quincy/stable"
         config = {
-            osd-devices = "/dev/vdb"
-            source = "distro"
+            osds = {
+                osd-devices = "/dev/vdb"
+                source = "distro"
+            }
+            mons = {}
+            rgw = {}
         }
     }
 }
@@ -170,9 +174,7 @@ module "ceph_cluster" {
     model = juju_model.ovb.name
     channel = local.ceph.channel
     series = local.series
-    config = {
-        osds = local.ceph.config
-    }
+    config = local.ceph.config
     units = {
         osds = 3
         mons = 3
