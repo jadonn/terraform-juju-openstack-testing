@@ -128,7 +128,7 @@ resource "juju_integration" "ceph_mon_glance" {
 }
 
 resource "juju_integration" "ceph_radosgw_ceph_mon" {
-    model = juju_model.ovb.name
+    model = var.model
     application {
         name = juju_application.ceph_radosgw.name
         endpoint = "mon"
