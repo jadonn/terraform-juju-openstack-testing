@@ -1144,7 +1144,7 @@ resource "juju_integration" "cinder_ceph_ceph_mon" {
     }
 
     application {
-        name = juju_application.ceph_mon.name
+        name = module.ceph_cluster.application_names.mons
         endpoint = "client"
     }
 }
