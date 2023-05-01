@@ -84,6 +84,8 @@ locals {
             totally-unsecure-auto-unlock = "true"
             auto-generate-root-ca-cert = "true"
         }
+        units = 1
+        placement = "lxd:${local.hyperconverged_juju_ids[0]}"
     }
 }
 
@@ -191,7 +193,7 @@ module "nova" {
         mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
         neutron_api = juju_application.neutron_api.name
         rabbitmq = juju_application.rabbitmq.name
-        vault = juju_application.vault.name
+        vault = module.vault.application_names.vault
     }
 }
 
@@ -217,6 +219,28 @@ module "ceph_cluster" {
     }
 }
 
+module "vault" {
+    source = "./vault"
+    model = juju_model.ovb.name
+    channel = local.vault.channel
+    series = local.series
+    mysql = {
+        channel = local.mysql.channel
+    }
+    config = {
+        vault = local.vault.config
+    }
+    units = {
+        vault = local.vault.units
+    }
+    placement = {
+        vault = local.vault.placement
+    }
+    relation_names = {
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+    }
+}
+
 resource "juju_application" "mysql_innodb_cluster" {
     model = juju_model.ovb.name
     name = "mysql-innodb-cluster" // Needed the name or you get an error about how application- is an invalid application tag
@@ -228,71 +252,6 @@ resource "juju_application" "mysql_innodb_cluster" {
 
     units = 3
     placement = join(",", local.hyperconverged_juju_ids)
-}
-
-resource "juju_application" "vault" {
-    model = juju_model.ovb.name
-    name = "vault"
-    charm {
-        name = "vault"
-        channel = local.vault.channel
-        series = local.series
-    }
-
-    config = local.vault.config
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[0]}"
-}
-
-resource "juju_application" "vault_mysql_router" {
-    model = juju_model.ovb.name
-    name = "vault-mysql-router"
-    charm {
-        name = "mysql-router"
-        channel = local.mysql.channel
-        series = local.series
-    }
-    units = 0 // Subordinate applications cannot have units
-    placement = juju_application.vault.placement
-}
-
-resource "juju_integration" "vault_db_router" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.vault_mysql_router.name
-        endpoint = "db-router"
-    }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-        endpoint = "db-router"
-    }
-}
-
-resource "juju_integration" "vault_shared_db" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.vault_mysql_router.name
-        endpoint = "shared-db"
-    }
-
-    application {
-        name = juju_application.vault.name
-        endpoint = "shared-db"
-    }
-}
-
-resource "juju_integration" "mysql_vault_certificates" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-        endpoint = "certificates"
-    }
-    application {
-        name = juju_application.vault.name
-        endpoint = "certificates"
-    }
 }
 
 resource "juju_application" "ovn_central" {
@@ -412,7 +371,7 @@ resource "juju_integration" "neutron_api_vault" {
     }
 
     application {
-        name = juju_application.vault.name
+        name = module.vault.application_names.vault
         endpoint = "certificates"
     }
 }
@@ -425,7 +384,7 @@ resource "juju_integration" "neutron_api_plugin_ovn_vault" {
     }
 
     application {
-        name = juju_application.vault.name
+        name = module.vault.application_names.vault
         endpoint = "certificates"
     }
 }
@@ -438,7 +397,7 @@ resource "juju_integration" "ovn_central_vault" {
     }
 
     application {
-        name = juju_application.vault.name
+        name = module.vault.application_names.vault
         endpoint = "certificates"
     }
 }
@@ -451,7 +410,7 @@ resource "juju_integration" "ovn_chassis_vault" {
     }
 
     application {
-        name = juju_application.vault.name
+        name = module.vault.application_names.vault
         endpoint = "certificates"
     }
 }
@@ -568,7 +527,7 @@ resource "juju_integration" "keystone_vault_certificates" {
     }
 
     application {
-        name = juju_application.vault.name
+        name = module.vault.application_names.vault
         endpoint = "certificates"
     }
 }
@@ -685,7 +644,7 @@ resource "juju_integration" "placement_vault" {
     }
 
     application {
-        name = juju_application.vault.name
+        name = module.vault.application_names.vault
         endpoint = "certificates"
     }
 }
@@ -763,7 +722,7 @@ resource "juju_integration" "openstack_dashboard_vault" {
     }
 
     application {
-        name = juju_application.vault.name
+        name = module.vault.application_names.vault
         endpoint = "certificates"
     }
 }
@@ -867,7 +826,7 @@ resource "juju_integration" "glance_vault" {
     }
 
     application {
-        name = juju_application.vault.name
+        name = module.vault.application_names.vault
         endpoint = "certificates"
     }
 }
@@ -987,7 +946,7 @@ resource "juju_integration" "cinder_vault" {
     }
 
     application {
-        name = juju_application.vault.name
+        name = module.vault.application_names.vault
         endpoint = "certificates"
     }
 }
