@@ -47,20 +47,26 @@ locals {
 
 locals {
     nova = {
-        compute = {
-            config = {
+        config = {
+            compute = {
                 config_flags = "default_ephemeral_format=ext4"
                 enable_live_migration = "true"
                 enable_resize = "true"
                 migration_auth_type = "ssh"
                 virt_type = "qemu"
             }
-        }
-        cloud_controller = {
-            config = {
+            cloud_controller = {
                 network-manager = "Neutron"
                 openstack-origin = "distro"
             }
+        }
+        units = {
+            compute = 3
+            cloud_controller = 1
+        }
+        placement = {
+            compute = join(",", local.hyperconverged_juju_ids)
+            cloud_controller = "lxd:${local.hyperconverged_juju_ids[1]}"
         }
     }
 }
@@ -169,6 +175,26 @@ locals {
     hyperconverged_juju_ids = [for machine in juju_machine.hyperconverged: split(":", machine.id)[1]]
 }
 
+module "nova" {
+    source = "./nova"
+    model = juju_model.ovb.name
+    channel = local.openstack.channel
+    series = local.series
+    mysql = {
+        channel = local.mysql.channel
+    }
+    config = local.nova.config
+    units = local.nova.units
+    placement = local.nova.placement
+    relation_names = {
+        keystone = juju_application.keystone.name
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+        neutron_api = juju_application.neutron_api.name
+        rabbitmq = juju_application.rabbitmq.name
+        vault = juju_application.vault.name
+    }
+}
+
 module "ceph_cluster" {
     source = "./ceph"
     model = juju_model.ovb.name
@@ -186,23 +212,9 @@ module "ceph_cluster" {
         rgw = "lxd:${local.hyperconverged_juju_ids[1]}"
     }
     relation_names = {
-        nova = juju_application.nova_compute.name
+        nova = module.nova.application_names.compute
         glance = juju_application.glance.name
     }
-}
-
-resource "juju_application" "nova_compute" {
-    model = juju_model.ovb.name
-    charm {
-        name = "nova-compute"
-        channel = local.openstack.channel
-        series = local.series
-    }
-
-    config = local.nova.compute.config
-    
-    units = 3
-    placement = join(",", local.hyperconverged_juju_ids)
 }
 
 resource "juju_application" "mysql_innodb_cluster" {
@@ -387,7 +399,7 @@ resource "juju_integration" "ovn_chassis_nova_compute" {
     }
 
     application {
-        name = juju_application.nova_compute.name
+        name = module.nova.application_names.compute
         endpoint = "neutron-plugin"
     }
 }
@@ -587,138 +599,6 @@ resource "juju_integration" "rabbitmq_neutron_api" {
     }
 }
 
-resource "juju_integration" "rabbitmq_nova_compute" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.rabbitmq.name
-        endpoint = "amqp"
-    }
-
-    application {
-        name = juju_application.nova_compute.name
-        endpoint = "amqp"
-    }
-}
-
-resource "juju_application" "nova_cloud_controller" {
-    model = juju_model.ovb.name
-    name = "nova-cloud-controller"
-    charm {
-        name = "nova-cloud-controller"
-        channel = local.openstack.channel
-        series = local.series
-    }
-
-    config = local.nova.cloud_controller.config
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
-}
-
-resource "juju_application" "ncc_mysql_router" {
-    model = juju_model.ovb.name
-    name = "ncc-mysql-router"
-    charm {
-        name = "mysql-router"
-        channel = local.mysql.channel
-        series = local.series
-    }
-
-    units = 0
-    placement = juju_application.nova_cloud_controller.placement
-}
-
-resource "juju_integration" "ncc_mysql_router_db_router" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ncc_mysql_router.name
-        endpoint = "db-router"
-    }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-        endpoint = "db-router"
-    }
-}
-
-resource "juju_integration" "ncc_mysql_router_shared_db" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ncc_mysql_router.name
-        endpoint = "shared-db"
-    }
-
-    application {
-        name = juju_application.nova_cloud_controller.name
-        endpoint = "shared-db"
-    }
-}
-
-resource "juju_integration" "nova_cloud_controller_keystone" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.nova_cloud_controller.name
-        endpoint = "identity-service"
-    }
-
-    application {
-        name = juju_application.keystone.name
-        endpoint = "identity-service"
-    }
-}
-
-resource "juju_integration" "nova_cloud_controller_rabbitmq" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.nova_cloud_controller.name
-        endpoint = "amqp"
-    }
-
-    application {
-        name = juju_application.rabbitmq.name
-        endpoint = "amqp"
-    }
-}
-
-resource "juju_integration" "nova_cloud_controller_neutron_api" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.nova_cloud_controller.name
-        endpoint = "neutron-api"
-    }
-
-    application {
-        name = juju_application.neutron_api.name
-        endpoint = "neutron-api"
-    }
-}
-
-resource "juju_integration" "nova_cloud_controller_nova_compute" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.nova_cloud_controller.name
-        endpoint = "cloud-compute"
-    }
-
-    application {
-        name = juju_application.nova_compute.name
-        endpoint = "cloud-compute"
-    }
-}
-
-resource "juju_integration" "nova_cloud_controller_vault" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.nova_cloud_controller.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = juju_application.vault.name
-        endpoint = "certificates"
-    }
-}
-
 resource "juju_application" "placement" {
     model = juju_model.ovb.name
     name = "placement"
@@ -792,7 +672,7 @@ resource "juju_integration" "placement_nova_cloud_controller" {
     }
 
     application {
-        name = juju_application.nova_cloud_controller.name
+        name = module.nova.application_names.compute
         endpoint = "placement"
     }
 }
@@ -948,7 +828,7 @@ resource "juju_integration" "glance_nova_cloud_controller" {
     }
 
     application {
-        name = juju_application.nova_cloud_controller.name
+        name = module.nova.application_names.cloud_controller
         endpoint = "image-service"
     }
 }
@@ -961,7 +841,7 @@ resource "juju_integration" "glance_nova_compute" {
     }
 
     application {
-        name = juju_application.nova_compute.name
+        name = module.nova.application_names.compute
         endpoint = "image-service"
     }
 }
@@ -1055,7 +935,7 @@ resource "juju_integration" "cinder_nova_cloud_controller" {
     }
 
     application {
-        name = juju_application.nova_cloud_controller.name
+        name = module.nova.application_names.cloud_controller
         endpoint = "cinder-volume-service"
     }
 }
@@ -1159,7 +1039,7 @@ resource "juju_integration" "cinder_ceph_nova_compute" {
     }
 
     application {
-        name = juju_application.nova_compute.name
+        name = module.nova.application_names.compute
         endpoint = "ceph-access"
     }
 }
