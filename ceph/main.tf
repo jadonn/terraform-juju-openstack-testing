@@ -67,8 +67,8 @@ resource "juju_application" "ceph_mon" {
     name = "ceph-mon"
     charm {
         name = "ceph-mon"
-        channel = local.ceph.channel
-        series = local.series
+        channel = var.channel
+        series = var.series
     }
 
     units = var.units.mons
