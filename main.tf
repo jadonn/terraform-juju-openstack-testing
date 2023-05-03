@@ -96,6 +96,8 @@ locals {
             config = {
                 source = "distro"
             }
+            units = 3
+            placement = join(",", [for id in local.hyperconverged_juju_ids: "lxd:${id}"])
         }
         chassis = {
             config = {
@@ -114,6 +116,8 @@ locals {
                 flat-network-providers = "physnet1"
                 openstack-origin = "distro"                
             }
+            units = 1
+            placement = "lxd:${local.hyperconverged_juju_ids[1]}"
         }
     }
 }
@@ -191,7 +195,7 @@ module "nova" {
     relation_names = {
         keystone = juju_application.keystone.name
         mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
-        neutron_api = juju_application.neutron_api.name
+        neutron_api = module.neutron_ovn.application_names.neutron_api
         rabbitmq = juju_application.rabbitmq.name
         vault = module.vault.application_names.vault
     }
@@ -254,203 +258,34 @@ resource "juju_application" "mysql_innodb_cluster" {
     placement = join(",", local.hyperconverged_juju_ids)
 }
 
-resource "juju_application" "ovn_central" {
+module "neutron_ovn" {
+    source = "./neutron-ovn"
     model = juju_model.ovb.name
-    name = "ovn-central"
-    charm {
-        name = "ovn-central"
-        channel = local.ovn.channel
-        series = local.series
+    channel = {
+        mysql = local.mysql.channel
+        openstack = local.openstack.channel
+        ovn = local.ovn.channel
     }
-
-    config = local.ovn.central.config
-    units = 3
-    placement = join(",", [for id in local.hyperconverged_juju_ids: "lxd:${id}"])
-}
-
-resource "juju_application" "neutron_api" {
-    model = juju_model.ovb.name
-    name = "neutron-api"
-    charm {
-        name = "neutron-api"
-        channel = local.openstack.channel
-        series = local.series
+    series = local.series
+    config = {
+        central = local.ovn.central.config
+        chassis = local.ovn.chassis.config
+        neutron_api = local.neutron.api.config
     }
-
-    config = local.neutron.api.config
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
-}
-
-resource "juju_application" "neutron_api_plugin_ovn" {
-    model = juju_model.ovb.name
-    name = "neutron-api-plugin-ovn"
-    charm {
-        name = "neutron-api-plugin-ovn"
-        channel = local.openstack.channel
-        series = local.series
+    units = {
+        central = local.ovn.central.units
+        neutron_api = local.neutron.api.units
     }
-
-    units = 0 // Subordinate charm applications cannot have units
-    placement = juju_application.neutron_api.placement
-}
-
-resource "juju_application" "ovn_chassis" {
-    model = juju_model.ovb.name
-    name = "ovn-chassis"
-    charm {
-        name = "ovn-chassis"
-        channel = local.ovn.channel
-        series = local.series
+    placement = {
+        central = local.ovn.central.placement
+        neutron_api = local.neutron.api.placement
     }
-
-    config = local.ovn.chassis.config
-
-    units = 0 // Subordinate charm applications cannot have units
-    placement = juju_application.neutron_api.placement
-}
-
-resource "juju_integration" "neutron_api_plugin_neutron_api" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.neutron_api_plugin_ovn.name
-        endpoint = "neutron-plugin"
-    }
-
-    application {
-        name = juju_application.neutron_api.name
-        endpoint = "neutron-plugin-api-subordinate"
-    }
-}
-
-resource "juju_integration" "neutron_api_plugin_ovn" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.neutron_api_plugin_ovn.name
-        endpoint = "ovsdb-cms"
-    }
-
-    application {
-        name = juju_application.ovn_central.name
-        endpoint = "ovsdb-cms"
-    }
-}
-
-resource "juju_integration" "ovn_chassis_ovn_central" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ovn_chassis.name
-        endpoint = "ovsdb"
-    }
-
-    application {
-        name = juju_application.ovn_central.name
-        endpoint = "ovsdb"
-    }
-}
-
-resource "juju_integration" "ovn_chassis_nova_compute" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ovn_chassis.name
-        endpoint = "nova-compute"
-    }
-
-    application {
-        name = module.nova.application_names.compute
-        endpoint = "neutron-plugin"
-    }
-}
-
-resource "juju_integration" "neutron_api_vault" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.neutron_api.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = module.vault.application_names.vault
-        endpoint = "certificates"
-    }
-}
-
-resource "juju_integration" "neutron_api_plugin_ovn_vault" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.neutron_api_plugin_ovn.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = module.vault.application_names.vault
-        endpoint = "certificates"
-    }
-}
-
-resource "juju_integration" "ovn_central_vault" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ovn_central.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = module.vault.application_names.vault
-        endpoint = "certificates"
-    }
-}
-
-resource "juju_integration" "ovn_chassis_vault" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.ovn_chassis.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = module.vault.application_names.vault
-        endpoint = "certificates"
-    }
-}
-
-resource "juju_application" "neutron_api_mysql_router" {
-    model = juju_model.ovb.name
-    name = "neutron-api-mysql-router"
-    charm {
-        name = "mysql-router"
-        channel = local.mysql.channel
-        series = local.series
-    }
-
-    units = 0
-    placement = juju_application.neutron_api.placement
-}
-
-resource "juju_integration" "neutron_api_mysql_router_db_router" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.neutron_api_mysql_router.name
-        endpoint = "db-router"
-    }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-        endpoint = "db-router"
-    }
-}
-
-resource "juju_integration" "neutron_api_mysql_router_shared_db" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.neutron_api_mysql_router.name
-        endpoint = "shared-db"
-    }
-
-    application {
-        name = juju_application.neutron_api.name
-        endpoint = "shared-db"
+    relation_names = {
+        keystone = juju_application.keystone.name
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+        nova_compute = module.nova.application_names.compute
+        rabbitmq = juju_application.rabbitmq.name
+        vault = module.vault.application_names.vault
     }
 }
 
@@ -506,19 +341,6 @@ resource "juju_integration" "keystone_mysql_router_shared_db" {
     }
 }
 
-resource "juju_integration" "keystone_neutron_api" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.keystone.name
-        endpoint = "identity-service"
-    }
-
-    application {
-        name = juju_application.neutron_api.name
-        endpoint = "identity-service"
-    }
-}
-
 resource "juju_integration" "keystone_vault_certificates" {
     model = juju_model.ovb.name
     application {
@@ -543,19 +365,6 @@ resource "juju_application" "rabbitmq" {
 
     units = 1
     placement = "lxd:${local.hyperconverged_juju_ids[0]}"
-}
-
-resource "juju_integration" "rabbitmq_neutron_api" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.rabbitmq.name
-        endpoint = "amqp"
-    }
-
-    application {
-        name = juju_application.neutron_api.name
-        endpoint = "amqp"
-    }
 }
 
 resource "juju_application" "placement" {
@@ -1102,7 +911,7 @@ resource "juju_integration" "designate_neutron_api" {
     }
 
     application {
-        name = juju_application.neutron_api.name
+        name = module.neutron_ovn.application_names.neutron_api
     }
 }
 
