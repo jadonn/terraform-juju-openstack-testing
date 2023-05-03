@@ -27,7 +27,7 @@ resource "juju_application" "cinder_mysql_router" {
     name = "cinder-mysql-router"
     charm {
         name = "mysql-router"
-        channel = var.channel.openstack
+        channel = var.channel.mysql
         series = var.series
     }
 
