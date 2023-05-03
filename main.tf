@@ -123,6 +123,13 @@ locals {
 }
 
 locals {
+    keystone = {
+        units = 1
+        placement = "lxd:${local.hyperconverged_juju_ids[2]}"
+    }
+}
+
+locals {
     rabbitmq = {
         channel = "3.9/stable"
     }
@@ -193,7 +200,7 @@ module "nova" {
     units = local.nova.units
     placement = local.nova.placement
     relation_names = {
-        keystone = juju_application.keystone.name
+        keystone = module.keystone.application_names.keystone
         mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
         neutron_api = module.neutron_ovn.application_names.neutron_api
         rabbitmq = juju_application.rabbitmq.name
@@ -281,7 +288,7 @@ module "neutron_ovn" {
         neutron_api = local.neutron.api.placement
     }
     relation_names = {
-        keystone = juju_application.keystone.name
+        keystone = module.keystone.application_names.keystone
         mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
         nova_compute = module.nova.application_names.compute
         rabbitmq = juju_application.rabbitmq.name
@@ -289,68 +296,23 @@ module "neutron_ovn" {
     }
 }
 
-resource "juju_application" "keystone" {
+module "keystone" {
+    source = "./keystone"
     model = juju_model.ovb.name
-    name = "keystone"
-    charm {
-        name = "keystone"
-        channel = local.openstack.channel
-        series = local.series
+    channel = {
+        openstack = local.openstack.channel
+        mysql = local.mysql.channel
     }
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[2]}"
-}
-
-resource "juju_application" "keystone_mysql_router" {
-    model = juju_model.ovb.name
-    name = "keystone-mysql-router"
-    charm {
-        name = "mysql-router"
-        channel = local.mysql.channel
-        series = local.series
+    series = local.series
+    units = {
+        keystone = local.keystone.units
     }
-
-    units = 0 // Subordinate charms cannot have units
-    placement = juju_application.keystone.placement
-}
-
-resource "juju_integration" "keystone_mysql_router_db_router" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.keystone_mysql_router.name
-        endpoint = "db-router"
+    placement = {
+        keystone = local.keystone.placement
     }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-        endpoint = "db-router"
-    }
-}
-
-resource "juju_integration" "keystone_mysql_router_shared_db" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.keystone_mysql_router.name
-        endpoint = "shared-db"
-    }
-
-    application {
-        name = juju_application.keystone.name
-        endpoint = "shared-db"
-    }
-}
-
-resource "juju_integration" "keystone_vault_certificates" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.keystone.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = module.vault.application_names.vault
-        endpoint = "certificates"
+    relation_names = {
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+        vault = module.vault.application_names.vault
     }
 }
 
@@ -427,7 +389,7 @@ resource "juju_integration" "placement_keystone" {
     }
 
     application {
-        name = juju_application.keystone.name
+        name = module.keystone.application_names.keystone
         endpoint = "identity-service"
     }
 }
@@ -518,7 +480,7 @@ resource "juju_integration" "openstack_dashboard_keystone" {
     }
 
     application {
-        name = juju_application.keystone.name
+        name = module.keystone.application_names.keystone
         endpoint = "identity-service"
     }
 }
@@ -622,7 +584,7 @@ resource "juju_integration" "glance_keystone" {
     }
 
     application {
-        name = juju_application.keystone.name
+        name = module.keystone.application_names.keystone
         endpoint = "identity-service"
     }
 }
@@ -716,7 +678,7 @@ resource "juju_integration" "cinder_keystone" {
     }
 
     application {
-        name = juju_application.keystone.name
+        name = module.keystone.application_names.keystone
         endpoint = "identity-service"
     }
 }
@@ -900,7 +862,7 @@ resource "juju_integration" "designate_keystone" {
     }
 
     application {
-        name = juju_application.keystone.name
+        name = module.keystone.application_names.keystone
     }
 }
 
@@ -970,7 +932,7 @@ resource "juju_integration" "manila_keystone" {
     }
     
     application {
-        name = juju_application.keystone.name
+        name = module.keystone.application_names.keystone
     }
 }
 
