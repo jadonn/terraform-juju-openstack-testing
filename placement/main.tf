@@ -18,6 +18,9 @@ resource "juju_application" "placement" {
 
     units = var.units.placement
     placement = var.placement.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "placement_mysql_router" {
@@ -31,6 +34,9 @@ resource "juju_application" "placement_mysql_router" {
 
     units = 0 # Subordinate charms must have 0 units
     placement = juju_application.placement.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "placement_mysql_router_db_router" {

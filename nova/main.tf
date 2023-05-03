@@ -19,6 +19,9 @@ resource "juju_application" "nova_compute" {
     
     units = var.units.compute
     placement = var.placement.compute
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "nova_cloud_controller" {
@@ -34,6 +37,9 @@ resource "juju_application" "nova_cloud_controller" {
 
     units = var.units.cloud_controller
     placement = var.placement.cloud_controller
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "ncc_mysql_router" {
@@ -47,6 +53,9 @@ resource "juju_application" "ncc_mysql_router" {
 
     units = 0
     placement = juju_application.nova_cloud_controller.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "ncc_mysql_router_db_router" {

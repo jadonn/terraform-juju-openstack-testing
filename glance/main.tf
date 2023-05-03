@@ -18,6 +18,9 @@ resource "juju_application" "glance" {
 
     units = var.units.glance
     placement = var.placement.glance
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "glance_mysql_router" {
@@ -31,6 +34,9 @@ resource "juju_application" "glance_mysql_router" {
 
     units = 0 # Subordinate charms must have 0 units
     placement = juju_application.glance.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "glance_mysql_router_db_router" {

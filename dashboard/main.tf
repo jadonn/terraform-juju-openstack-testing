@@ -18,6 +18,9 @@ resource "juju_application" "openstack_dashboard" {
 
     units = var.units.dashboard
     placement = var.placement.dashboard
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "openstack_dashboard_mysql_router" {
@@ -31,6 +34,9 @@ resource "juju_application" "openstack_dashboard_mysql_router" {
 
     units = 0 # Subordinate charms must have 0 units
     placement = juju_application.openstack_dashboard.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "dashboard_mysql_router_db_router" {

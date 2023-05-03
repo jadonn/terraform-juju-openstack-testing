@@ -298,6 +298,9 @@ resource "juju_application" "mysql_innodb_cluster" {
 
     units = 3
     placement = join(",", local.hyperconverged_juju_ids)
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 module "neutron_ovn" {
@@ -362,6 +365,9 @@ resource "juju_application" "rabbitmq" {
 
     units = 1
     placement = "lxd:${local.hyperconverged_juju_ids[0]}"
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 module "placement" {

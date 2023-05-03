@@ -18,6 +18,9 @@ resource "juju_application" "manila" {
     config = var.config.manila
     units = var.units.manila
     placement = var.placement.manila
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "manila_generic" {
@@ -31,6 +34,9 @@ resource "juju_application" "manila_generic" {
     config = var.config.manila_generic
     units = 0 // Subordinate applications cannot have units
     placement = juju_application.manila.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "manila_mysql" {

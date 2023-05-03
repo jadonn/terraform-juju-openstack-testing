@@ -20,6 +20,9 @@ resource "juju_application" "vault" {
 
     units = var.units.vault
     placement = var.placement.vault
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "vault_mysql_router" {
@@ -32,6 +35,9 @@ resource "juju_application" "vault_mysql_router" {
     }
     units = 0 // Subordinate applications cannot have units
     placement = juju_application.vault.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "vault_db_router" {

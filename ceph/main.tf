@@ -17,6 +17,9 @@ resource "juju_application" "ceph_osds" {
     config = var.config.osds
     units = var.units.osds
     placement = var.placement.osds
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "ceph_mon" {
@@ -30,6 +33,9 @@ resource "juju_application" "ceph_mon" {
 
     units = var.units.mons
     placement = var.placement.mons
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "ceph_radosgw" {
@@ -43,6 +49,9 @@ resource "juju_application" "ceph_radosgw" {
 
     units = var.units.rgw
     placement = var.placement.rgw
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "ceph_mon_ceph_osd" {

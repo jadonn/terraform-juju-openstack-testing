@@ -18,6 +18,9 @@ resource "juju_application" "designate" {
     config = var.config.designate
     units = var.units.designate
     placement = var.placement.designate
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "designate_bind" {
@@ -30,6 +33,9 @@ resource "juju_application" "designate_bind" {
     }
     units = var.units.designate # Put Bind with Designate
     placement = juju_application.designate.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "designate_designate_bind" {
@@ -53,6 +59,9 @@ resource "juju_application" "memcached" {
     }
     units = var.units.memcached
     placement = var.placement.memcached
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "designate_memcached" {

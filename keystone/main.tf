@@ -18,6 +18,9 @@ resource "juju_application" "keystone" {
 
     units = var.units.keystone
     placement = var.placement.keystone
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_application" "keystone_mysql_router" {
@@ -31,6 +34,9 @@ resource "juju_application" "keystone_mysql_router" {
 
     units = 0 // Subordinate charms cannot have units
     placement = juju_application.keystone.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
 }
 
 resource "juju_integration" "keystone_mysql_router_db_router" {
