@@ -163,6 +163,8 @@ locals {
             glance-api-version = "2"
             openstack-origin = "distro"
         }
+        units = 1
+        placement = "lxd:${local.hyperconverged_juju_ids[2]}"
     }
 }
 
@@ -416,177 +418,34 @@ module "glance" {
     }
 }
 
-resource "juju_application" "cinder" {
+module "cinder" {
+    source = "./cinder"
     model = juju_model.ovb.name
-    name = "cinder"
-    charm {
-        name = "cinder"
-        channel = local.openstack.channel
-        series = local.series
+    channel = {
+        openstack = local.openstack.channel
+        mysql = local.mysql.channel
     }
-
-    config = local.cinder.config
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[2]}"
-}
-
-resource "juju_application" "cinder_mysql_router" {
-    model = juju_model.ovb.name
-    name = "cinder-mysql-router"
-    charm {
-        name = "mysql-router"
-        channel = local.mysql.channel
-        series = local.series
+    series = local.series
+    config = {
+        cinder = local.cinder.config
     }
-
-    units = 0
-    placement = juju_application.cinder.placement
-}
-
-resource "juju_integration" "cinder_mysql_router_db_router" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder_mysql_router.name
-        endpoint = "db-router"
+    units = {
+        cinder = local.cinder.units
     }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-        endpoint = "db-router"
+    placement = {
+        cinder = local.cinder.placement
+    }
+    relation_names = {
+        ceph_mons = module.ceph_cluster.application_names.mons
+        glance = module.glance.application_names.glance
+        keystone = module.keystone.application_names.keystone
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+        nova_compute = module.nova.application_names.compute
+        nova_cloud_controller = module.nova.application_names.cloud_controller
+        rabbitmq = juju_application.rabbitmq.name
+        vault = module.vault.application_names.vault
     }
 }
-
-resource "juju_integration" "cinder_mysql_router_shared_db" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder_mysql_router.name
-        endpoint = "shared-db"
-    }
-
-    application {
-        name = juju_application.cinder.name
-        endpoint = "shared-db"
-    }
-}
-
-resource "juju_integration" "cinder_nova_cloud_controller" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder.name
-        endpoint = "cinder-volume-service"
-    }
-
-    application {
-        name = module.nova.application_names.cloud_controller
-        endpoint = "cinder-volume-service"
-    }
-}
-
-resource "juju_integration" "cinder_keystone" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder.name
-        endpoint = "identity-service"
-    }
-
-    application {
-        name = module.keystone.application_names.keystone
-        endpoint = "identity-service"
-    }
-}
-
-resource "juju_integration" "cinder_rabbitmq" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder.name
-        endpoint = "amqp"
-    }
-
-    application {
-        name = juju_application.rabbitmq.name
-        endpoint = "amqp"
-    }
-}
-
-resource "juju_integration" "cinder_glance" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder.name
-        endpoint = "image-service"
-    }
-
-    application {
-        name = module.glance.application_names.glance
-        endpoint = "image-service"
-    }
-}
-
-resource "juju_integration" "cinder_vault" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = module.vault.application_names.vault
-        endpoint = "certificates"
-    }
-}
-
-resource "juju_application" "cinder_ceph" {
-    model = juju_model.ovb.name
-    name = "cinder-ceph"
-    charm {
-        name = "cinder-ceph"
-        channel = local.openstack.channel
-        series = local.series
-    }
-
-    units = 0
-    placement = juju_application.cinder.placement
-}
-
-resource "juju_integration" "cinder_ceph_cinder" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder_ceph.name
-        endpoint = "storage-backend"
-    }
-
-    application {
-        name = juju_application.cinder.name
-        endpoint = "storage-backend"
-    }
-}
-
-resource "juju_integration" "cinder_ceph_ceph_mon" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder_ceph.name
-        endpoint = "ceph"
-    }
-
-    application {
-        name = module.ceph_cluster.application_names.mons
-        endpoint = "client"
-    }
-}
-
-resource "juju_integration" "cinder_ceph_nova_compute" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.cinder_ceph.name
-        endpoint = "ceph-access"
-    }
-
-    application {
-        name = module.nova.application_names.compute
-        endpoint = "ceph-access"
-    }
-}
-
 resource "juju_application" "designate" {
     model = juju_model.ovb.name
     name = "designate"
