@@ -483,7 +483,7 @@ module "designate" {
         keystone = module.keystone.application_names.keystone
         mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
         neutron_api = module.neutron_ovn.application_names.neutron_api
-        rabbitmq = juju_application.rabbitmq
+        rabbitmq = juju_application.rabbitmq.name
     }
 }
 
