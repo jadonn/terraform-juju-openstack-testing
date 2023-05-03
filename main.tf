@@ -137,6 +137,13 @@ locals {
 }
 
 locals {
+    dashboard = {
+        units = 1
+        placement = "lxd:${local.hyperconverged_juju_ids[0]}"
+    }
+}
+
+locals {
     rabbitmq = {
         channel = "3.9/stable"
     }
@@ -358,81 +365,24 @@ module "placement" {
     }
 }
 
-resource "juju_application" "openstack_dashboard" {
+module "dashboard" {
+    source = "./dashboard"
     model = juju_model.ovb.name
-    name = "openstack-dashboard"
-    charm {
-        name = "openstack-dashboard"
-        channel = local.openstack.channel
-        series = local.series
+    channel = {
+        openstack = local.openstack.channel
+        mysql = local.mysql.channel
     }
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[0]}"
-}
-
-resource "juju_application" "openstack_dashboard_mysql_router" {
-    model = juju_model.ovb.name
-    name = "dashboard-mysql-router"
-    charm {
-        name = "mysql-router"
-        channel = local.mysql.channel
-        series = local.series
+    series = local.series
+    units = {
+        dashboard = local.dashboard.units
     }
-
-    units = 0
-    placement = juju_application.openstack_dashboard.placement
-}
-
-resource "juju_integration" "dashboard_mysql_router_db_router" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.openstack_dashboard_mysql_router.name
-        endpoint = "db-router"
+    placement = {
+        dashboard = local.dashboard.placement
     }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-        endpoint = "db-router"
-    }
-}
-
-resource "juju_integration" "dashboard_mysql_router_shared_db" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.openstack_dashboard_mysql_router.name
-        endpoint = "shared-db"
-    }
-
-    application {
-        name = juju_application.openstack_dashboard.name
-        endpoint = "shared-db"
-    }
-}
-
-resource "juju_integration" "openstack_dashboard_keystone" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.openstack_dashboard.name
-        endpoint = "identity-service"
-    }
-
-    application {
-        name = module.keystone.application_names.keystone
-        endpoint = "identity-service"
-    }
-}
-
-resource "juju_integration" "openstack_dashboard_vault" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.openstack_dashboard.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = module.vault.application_names.vault
-        endpoint = "certificates"
+    relation_names = {
+        keystone = module.keystone.application_names.keystone
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+        vault = module.vault.application_names.vault
     }
 }
 
