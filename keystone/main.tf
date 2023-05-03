@@ -7,46 +7,6 @@ terraform {
     }
 }
 
-variable "model" {
-    type = string
-}
-
-variable "channel" {
-    type = object({
-        openstack = string
-        mysql = string
-    })
-}
-
-variable "series" {
-    type = string
-}
-
-variable "units" {
-    type = object({
-        keystone = number
-    })
-}
-
-variable "placement" {
-    type = object({
-        keystone = string
-    })
-}
-
-variable "relation_names" {
-    type = object({
-        mysql_innodb_cluster = string
-        vault = string
-    })
-}
-
-output "application_names" {
-    value = {
-        keystone = juju_application.keystone.name
-    }
-}
-
 resource "juju_application" "keystone" {
     model = var.model
     name = "keystone"
