@@ -426,7 +426,7 @@ module "glance" {
         mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
         nova_cloud_controller = module.nova.application_names.cloud_controller
         nova_compute = module.nova.application_names.compute
-        vault = module.vault.application_names.vaultlocal.glance.units
+        vault = module.vault.application_names.vault
     }
 }
 
