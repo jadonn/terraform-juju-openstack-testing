@@ -144,6 +144,13 @@ locals {
 }
 
 locals {
+    glance = {
+        units = 1
+        placement = "lxd:${local.hyperconverged_juju_ids[1]}"
+    }
+}
+
+locals {
     rabbitmq = {
         channel = "3.9/stable"
     }
@@ -240,7 +247,7 @@ module "ceph_cluster" {
     }
     relation_names = {
         nova = module.nova.application_names.compute
-        glance = juju_application.glance.name
+        glance = module.glance.application_names.glance
     }
 }
 
@@ -386,110 +393,28 @@ module "dashboard" {
     }
 }
 
-resource "juju_application" "glance" {
+module "glance" {
+    source = "./glance"
     model = juju_model.ovb.name
-    name = "glance"
-    charm {
-        name = "glance"
-        channel = local.openstack.channel
-        series = local.series
+    channel = {
+        openstack = local.openstack.channel
+        mysql = local.mysql.channel
     }
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
-}
-
-resource "juju_application" "glance_mysql_router" {
-    model = juju_model.ovb.name
-    name = "glance-mysql-router"
-    charm {
-        name = "mysql-router"
-        channel = local.mysql.channel
-        series = local.series
+    series = local.series
+    units = {
+        glance = local.glance.units
     }
-
-    units = 0
-    placement = juju_application.glance.placement
-}
-
-resource "juju_integration" "glance_mysql_router_db_router" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.glance_mysql_router.name
-        endpoint = "db-router"
+    placement = {
+        glance = local.glance.placement
     }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-        endpoint = "db-router"
+    relation_names = {
+        keystone = module.keystone.application_names.keystone
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+        nova_cloud_controller = module.nova.application_names.cloud_controller
+        nova_compute = module.nova.application_names.compute
+        vault = module.vault.application_names.vaultlocal.glance.units
     }
 }
-
-resource "juju_integration" "glance_mysql_router_shared_db" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.glance_mysql_router.name
-        endpoint = "shared-db"
-    }
-
-    application {
-        name = juju_application.glance.name
-        endpoint = "shared-db"
-    }
-}
-
-resource "juju_integration" "glance_nova_cloud_controller" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.glance.name
-        endpoint = "image-service"
-    }
-
-    application {
-        name = module.nova.application_names.cloud_controller
-        endpoint = "image-service"
-    }
-}
-
-resource "juju_integration" "glance_nova_compute" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.glance.name
-        endpoint = "image-service"
-    }
-
-    application {
-        name = module.nova.application_names.compute
-        endpoint = "image-service"
-    }
-}
-
-resource "juju_integration" "glance_keystone" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.glance.name
-        endpoint = "identity-service"
-    }
-
-    application {
-        name = module.keystone.application_names.keystone
-        endpoint = "identity-service"
-    }
-}
-
-resource "juju_integration" "glance_vault" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.glance.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = module.vault.application_names.vault
-        endpoint = "certificates"
-    }
-}
-
 
 resource "juju_application" "cinder" {
     model = juju_model.ovb.name
@@ -592,7 +517,7 @@ resource "juju_integration" "cinder_glance" {
     }
 
     application {
-        name = juju_application.glance.name
+        name = module.glance.application_names.glance
         endpoint = "image-service"
     }
 }
