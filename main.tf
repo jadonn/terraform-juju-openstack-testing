@@ -173,6 +173,16 @@ locals {
         config = {
             nameservers = "ns1.not-a-real-domain.com. ns2.not-a-real-domain.com."
         }
+        units = 1
+        placement = "lxd:${local.hyperconverged_juju_ids[2]}"
+    }
+}
+
+locals {
+    memcached = {
+        channel = "latest/stable"
+        units = 1
+        placement = "lxd:${local.hyperconverged_juju_ids[0]}"
     }
 }
 
@@ -446,109 +456,34 @@ module "cinder" {
         vault = module.vault.application_names.vault
     }
 }
-resource "juju_application" "designate" {
-    model = juju_model.ovb.name
-    name = "designate"
-    charm {
-        name = "designate"
-        channel = local.openstack.channel
-        series = local.series
-    }
-    config = local.designate.config
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[2]}"
-}
 
-resource "juju_application" "designate_bind" {
+module "designate" {
+    source = "./designate"
     model = juju_model.ovb.name
-    name = "designate-bind"
-    charm {
-        name = "designate-bind"
-        channel = local.openstack.channel
-        series = local.series
+    channel = {
+        openstack = local.openstack.channel
+        memcached = local.memcached.channel
+        mysql = local.mysql.channel
     }
-    units = 1
-    placement = juju_application.designate.placement
-}
-
-resource "juju_integration" "designate_designate_bind" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.designate.name
+    series = local.series
+    config = {
+        designate = local.designate.config
     }
-
-    application {
-        name = juju_application.designate_bind.name
+    units = {
+        designate = local.designate.units
+        memcached = local.memcached.units
+    }
+    placement = {
+        designate = local.designate.placement
+        memcached = local.memcached.placement
+    }
+    relation_names = {
+        keystone = module.keystone.application_names.keystone
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+        neutron_api = module.neutron_ovn.application_names.neutron_api
+        rabbitmq = juju_application.rabbitmq
     }
 }
-
-resource "juju_application" "memcached" {
-    model = juju_model.ovb.name
-    name = "memcached"
-    charm {
-        name = "memcached"
-        channel = "latest/stable"
-        series = local.series
-    }
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[0]}"
-}
-
-resource "juju_integration" "designate_memcached" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.designate.name
-    }
-
-    application {
-        name = juju_application.memcached.name
-    }
-}
-
-resource "juju_integration" "designate_mysql" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.designate.name
-    }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-    }
-}
-
-resource "juju_integration" "designate_rabbitmq" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.designate.name
-    }
-
-    application {
-        name = juju_application.rabbitmq.name
-    }
-}
-
-resource "juju_integration" "designate_keystone" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.designate.name
-    }
-
-    application {
-        name = module.keystone.application_names.keystone
-    }
-}
-
-resource "juju_integration" "designate_neutron_api" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.designate.name
-    }
-
-    application {
-        name = module.neutron_ovn.application_names.neutron_api
-    }
-}
-
 resource "juju_application" "manila" {
     model = juju_model.ovb.name
     name = "manila"
