@@ -191,6 +191,8 @@ locals {
         config = {
             default-share-backend = "generic"
         }
+        units = 1
+        placement = "lxd:${local.hyperconverged_juju_ids[1]}"
         generic = {
             config = {
                 driver-service-instance-flavor-id = "1000" // This needs a value of a real image ID
@@ -484,75 +486,27 @@ module "designate" {
         rabbitmq = juju_application.rabbitmq
     }
 }
-resource "juju_application" "manila" {
-    model = juju_model.ovb.name
-    name = "manila"
-    charm {
-        name = "manila"
-        channel = local.openstack.channel
-        series = local.series
-    }
-    config = local.manila.config
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[1]}"
-}
 
-resource "juju_application" "manila_generic" {
+module "manila" {
+    source = "./manila"
     model = juju_model.ovb.name
-    name = "manila-generic"
-    charm {
-        name = "manila-generic"
-        channel = local.openstack.channel
-        series = local.series
+    channel = {
+        openstack = local.openstack.channel
     }
-    config = local.manila.generic.config
-    units = 0 // Subordinate applications cannot have units
-    placement = juju_application.manila.placement
-}
-
-resource "juju_integration" "manila_mysql" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.manila.name
+    series = local.series
+    config = {
+        manila = local.manila.config
+        manila_generic = local.manila.generic.config
     }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
+    units = {
+        manila = local.manila.units
+    }
+    placement = {
+        manila = local.manila.placement
+    }
+    relation_names = {
+        keystone = module.keystone.application_names.keystone
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+        rabbitmq = juju_application.rabbitmq.name
     }
 }
-
-resource "juju_integration" "manila_rabbitmq" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.manila.name
-    }
-
-    application {
-        name = juju_application.rabbitmq.name
-    }
-}
-
-resource "juju_integration" "manila_keystone" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.manila.name
-    }
-    
-    application {
-        name = module.keystone.application_names.keystone
-    }
-}
-
-resource "juju_integration" "manila_manila_generic" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.manila.name
-        endpoint = "manila-plugin"
-    }
-
-    application {
-        name = juju_application.manila_generic.name
-        endpoint = "manila-plugin"
-    }
-}
-
