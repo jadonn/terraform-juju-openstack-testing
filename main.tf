@@ -130,6 +130,13 @@ locals {
 }
 
 locals {
+    placement = {
+        units = 1
+        placement = "lxd:${local.hyperconverged_juju_ids[2]}"
+    }
+}
+
+locals {
     rabbitmq = {
         channel = "3.9/stable"
     }
@@ -329,94 +336,25 @@ resource "juju_application" "rabbitmq" {
     placement = "lxd:${local.hyperconverged_juju_ids[0]}"
 }
 
-resource "juju_application" "placement" {
+module "placement" {
+    source = "./placement"
     model = juju_model.ovb.name
-    name = "placement"
-    charm {
-        name = "placement"
-        channel = local.openstack.channel
-        series = local.series
+    channel = {
+        openstack = local.openstack.channel
+        mysql = local.mysql.channel
     }
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[2]}"
-}
-
-resource "juju_application" "placement_mysql_router" {
-    model = juju_model.ovb.name
-    name = "placement-mysql-router"
-    charm {
-        name = "mysql-router"
-        channel = local.mysql.channel
-        series = local.series
+    series = local.series
+    units = {
+        placement = local.placement.units
     }
-
-    units = 0
-    placement = juju_application.placement.placement
-}
-
-resource "juju_integration" "placement_mysql_router_db_router" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.placement_mysql_router.name
-        endpoint = "db-router"
+    placement = {
+        placement = local.placement.placement
     }
-
-    application {
-        name = juju_application.mysql_innodb_cluster.name
-        endpoint = "db-router"
-    }
-}
-
-resource "juju_integration" "placement_mysql_router_shared_db" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.placement_mysql_router.name
-        endpoint = "shared-db"
-    }
-
-    application {
-        name = juju_application.placement.name
-        endpoint = "shared-db"
-    }
-}
-
-resource "juju_integration" "placement_keystone" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.placement.name
-        endpoint = "identity-service"
-    }
-
-    application {
-        name = module.keystone.application_names.keystone
-        endpoint = "identity-service"
-    }
-}
-
-resource "juju_integration" "placement_nova_cloud_controller" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.placement.name
-        endpoint = "placement"
-    }
-
-    application {
-        name = module.nova.application_names.compute
-        endpoint = "placement"
-    }
-}
-
-resource "juju_integration" "placement_vault" {
-    model = juju_model.ovb.name
-    application {
-        name = juju_application.placement.name
-        endpoint = "certificates"
-    }
-
-    application {
-        name = module.vault.application_names.vault
-        endpoint = "certificates"
+    relation_names = {
+        keystone = module.keystone.application_names.keystone
+        mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
+        nova_cloud_controller = module.nova.application_names.cloud_controller
+        vault = module.vault.application_names.vault
     }
 }
 
