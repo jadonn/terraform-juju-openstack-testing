@@ -22,6 +22,7 @@ variable "config" {
 
 variable "units" {
     type = object({
+        bind = number
         designate = number
         memcached = number
     })
@@ -29,6 +30,7 @@ variable "units" {
 
 variable "placement" {
     type = object({
+        bind = string
         designate = string
         memcached = string
     })

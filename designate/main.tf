@@ -31,8 +31,8 @@ resource "juju_application" "designate_bind" {
         channel = var.channel.openstack
         series = var.series
     }
-    units = var.units.designate # Put Bind with Designate
-    placement = juju_application.designate.placement
+    units = var.units.bind
+    placement = var.placement.bind
     lifecycle {
         ignore_changes = [ placement, ]
     }

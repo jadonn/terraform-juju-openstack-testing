@@ -173,8 +173,14 @@ locals {
         config = {
             nameservers = "ns1.not-a-real-domain.com. ns2.not-a-real-domain.com."
         }
-        units = 1
-        placement = "lxd:${local.hyperconverged_juju_ids[2]}"
+        units = {
+            bind = 1
+            designate = 1
+        }
+        placement = {
+            bind = "lxd:${local.hyperconverged_juju_ids[2]}"
+            designate = "lxd:${local.hyperconverged_juju_ids[2]}"
+        }
     }
 }
 
@@ -478,11 +484,13 @@ module "designate" {
         designate = local.designate.config
     }
     units = {
-        designate = local.designate.units
+        bind = local.designate.units.bind
+        designate = local.designate.units.designate
         memcached = local.memcached.units
     }
     placement = {
-        designate = local.designate.placement
+        bind = local.designate.placement.bind
+        designate = local.designate.placement.designate
         memcached = local.memcached.placement
     }
     relation_names = {
