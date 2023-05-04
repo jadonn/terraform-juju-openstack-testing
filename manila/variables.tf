@@ -14,8 +14,8 @@ variable "series" {
 
 variable "config" {
     type = object({
-        manila = object({})
-        manila_generic = object({})
+        manila = map(any)
+        manila_generic = map(any)
     })
 }
 

@@ -16,7 +16,7 @@ variable "series" {
 
 variable "config" {
     type = object({
-        designate = object({})
+        designate = map(any)
     })
 }
 

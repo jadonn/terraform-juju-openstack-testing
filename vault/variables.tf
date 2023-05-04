@@ -18,7 +18,7 @@ variable "mysql" {
 
 variable "config" {
     type = object({
-        vault = object({})
+        vault = map(any)
     })
 }
 

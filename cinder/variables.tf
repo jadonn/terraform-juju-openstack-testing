@@ -15,7 +15,7 @@ variable "series" {
 
 variable "config" {
     type = object({
-        cinder = object({})
+        cinder = map(any)
     })
 }
 

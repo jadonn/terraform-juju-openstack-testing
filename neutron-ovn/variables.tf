@@ -16,9 +16,9 @@ variable "series" {
 
 variable "config" {
     type = object({
-        central = object({})
-        chassis = object({})
-        neutron_api = object({})
+        central = map(any)
+        chassis = map(any)
+        neutron_api = map(any)
     })
 }
 

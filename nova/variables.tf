@@ -18,8 +18,8 @@ variable "mysql" {
 
 variable "config" {
     type = object({
-        compute = object({})
-        cloud_controller = object({})
+        compute = map(any)
+        cloud_controller = map(any)
     })
 }
 

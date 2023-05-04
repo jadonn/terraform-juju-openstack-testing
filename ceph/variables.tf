@@ -12,9 +12,9 @@ variable "series" {
 
 variable "config" {
     type = object({
-        osds = object({})
-        mons = object({})
-        rgw = object({})
+        osds = map(any)
+        mons = map(any)
+        rgw = map(any)
     })
 }
 
