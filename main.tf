@@ -49,11 +49,11 @@ locals {
     nova = {
         config = {
             compute = {
-                config_flags = "default_ephemeral_format=ext4"
-                enable_live_migration = "true"
-                enable_resize = "true"
-                migration_auth_type = "ssh"
-                virt_type = "qemu"
+                config-flags = "default_ephemeral_format=ext4"
+                enable-live-migration = "true"
+                enable-resize = "true"
+                migration-auth-type = "ssh"
+                virt-type = "qemu"
             }
             cloud_controller = {
                 network-manager = "Neutron"
