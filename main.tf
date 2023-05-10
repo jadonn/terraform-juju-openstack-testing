@@ -229,6 +229,38 @@ locals {
     hyperconverged_juju_ids = [for machine in juju_machine.hyperconverged: split(":", machine.id)[1]]
 }
 
+resource "juju_application" "mysql_innodb_cluster" {
+    model = juju_model.openstack.name
+    name = "mysql-innodb-cluster" // Needed the name or you get an error about how application- is an invalid application tag
+    charm {
+        name = "mysql-innodb-cluster"
+        channel = local.mysql.channel
+        series = local.series
+    }
+
+    units = 3
+    placement = join(",", local.hyperconverged_juju_ids)
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
+}
+
+resource "juju_application" "rabbitmq" {
+    model = juju_model.openstack.name
+    name = "rabbitmq-server"
+    charm {
+        name = "rabbitmq-server"
+        channel = local.rabbitmq.channel
+        series = local.series
+    }
+
+    units = 1
+    placement = "lxd:${local.hyperconverged_juju_ids[0]}"
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
+}
+
 module "nova" {
     source = "./nova"
     model = juju_model.openstack.name
@@ -293,22 +325,6 @@ module "vault" {
     }
 }
 
-resource "juju_application" "mysql_innodb_cluster" {
-    model = juju_model.openstack.name
-    name = "mysql-innodb-cluster" // Needed the name or you get an error about how application- is an invalid application tag
-    charm {
-        name = "mysql-innodb-cluster"
-        channel = local.mysql.channel
-        series = local.series
-    }
-
-    units = 3
-    placement = join(",", local.hyperconverged_juju_ids)
-    lifecycle {
-        ignore_changes = [ placement, ]
-    }
-}
-
 module "neutron_ovn" {
     source = "./neutron-ovn"
     model = juju_model.openstack.name
@@ -357,22 +373,6 @@ module "keystone" {
     relation_names = {
         mysql_innodb_cluster = juju_application.mysql_innodb_cluster.name
         vault = module.vault.application_names.vault
-    }
-}
-
-resource "juju_application" "rabbitmq" {
-    model = juju_model.openstack.name
-    name = "rabbitmq-server"
-    charm {
-        name = "rabbitmq-server"
-        channel = local.rabbitmq.channel
-        series = local.series
-    }
-
-    units = 1
-    placement = "lxd:${local.hyperconverged_juju_ids[0]}"
-    lifecycle {
-        ignore_changes = [ placement, ]
     }
 }
 
