@@ -207,7 +207,7 @@ locals {
     }
 }
 
-resource "juju_model" "ovb" {
+resource "juju_model" "openstack" {
     name = local.model.name
 
     cloud {
@@ -219,7 +219,7 @@ resource "juju_model" "ovb" {
 
 resource "juju_machine" "hyperconverged" {
     count = 3
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     series = local.series
     name = "hyperconverged-${count.index}"
     constraints = "tags=hyperconverged"
@@ -231,7 +231,7 @@ locals {
 
 module "nova" {
     source = "./nova"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = local.openstack.channel
     series = local.series
     mysql = {
@@ -251,7 +251,7 @@ module "nova" {
 
 module "ceph_cluster" {
     source = "./ceph"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = local.ceph.channel
     series = local.series
     config = local.ceph.config
@@ -273,7 +273,7 @@ module "ceph_cluster" {
 
 module "vault" {
     source = "./vault"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = local.vault.channel
     series = local.series
     mysql = {
@@ -294,7 +294,7 @@ module "vault" {
 }
 
 resource "juju_application" "mysql_innodb_cluster" {
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     name = "mysql-innodb-cluster" // Needed the name or you get an error about how application- is an invalid application tag
     charm {
         name = "mysql-innodb-cluster"
@@ -311,7 +311,7 @@ resource "juju_application" "mysql_innodb_cluster" {
 
 module "neutron_ovn" {
     source = "./neutron-ovn"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = {
         mysql = local.mysql.channel
         openstack = local.openstack.channel
@@ -342,7 +342,7 @@ module "neutron_ovn" {
 
 module "keystone" {
     source = "./keystone"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = {
         openstack = local.openstack.channel
         mysql = local.mysql.channel
@@ -361,7 +361,7 @@ module "keystone" {
 }
 
 resource "juju_application" "rabbitmq" {
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     name = "rabbitmq-server"
     charm {
         name = "rabbitmq-server"
@@ -378,7 +378,7 @@ resource "juju_application" "rabbitmq" {
 
 module "placement" {
     source = "./placement"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = {
         openstack = local.openstack.channel
         mysql = local.mysql.channel
@@ -400,7 +400,7 @@ module "placement" {
 
 module "dashboard" {
     source = "./dashboard"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = {
         openstack = local.openstack.channel
         mysql = local.mysql.channel
@@ -421,7 +421,7 @@ module "dashboard" {
 
 module "glance" {
     source = "./glance"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = {
         openstack = local.openstack.channel
         mysql = local.mysql.channel
@@ -444,7 +444,7 @@ module "glance" {
 
 module "cinder" {
     source = "./cinder"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = {
         openstack = local.openstack.channel
         mysql = local.mysql.channel
@@ -473,7 +473,7 @@ module "cinder" {
 
 module "designate" {
     source = "./designate"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = {
         openstack = local.openstack.channel
         memcached = local.memcached.channel
@@ -503,7 +503,7 @@ module "designate" {
 
 module "manila" {
     source = "./manila"
-    model = juju_model.ovb.name
+    model = juju_model.openstack.name
     channel = {
         openstack = local.openstack.channel
     }
