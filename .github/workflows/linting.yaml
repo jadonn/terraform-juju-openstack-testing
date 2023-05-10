@@ -1,0 +1,11 @@
+name: linting
+on: [push]
+jobs:
+  terraform-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: sudo apt update
+      - run: sudo snap install terraform --classic
+      - run: cd ${{ github.workspace }}
+      - run: terraform validate
