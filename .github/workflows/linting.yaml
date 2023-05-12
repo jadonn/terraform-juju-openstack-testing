@@ -8,4 +8,5 @@ jobs:
       - run: sudo apt update
       - run: sudo snap install terraform --classic
       - run: cd ${{ github.workspace }}
+      - run: terraform init
       - run: terraform validate
