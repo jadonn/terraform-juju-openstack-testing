@@ -506,6 +506,7 @@ module "manila" {
     model = juju_model.openstack.name
     channel = {
         openstack = local.openstack.channel
+        mysql = local.mysql.channel
     }
     series = local.series
     config = {

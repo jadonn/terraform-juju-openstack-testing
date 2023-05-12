@@ -5,6 +5,7 @@ variable "model" {
 variable "channel" {
     type = object({
         openstack = string
+        mysql = string
     })
 }
 
