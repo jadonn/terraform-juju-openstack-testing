@@ -73,7 +73,6 @@ resource "juju_application" "designate_mysql_router" {
         series = var.series
     }
     units = 0
-    placement = juju_application.designate.placement
     lifecycle {
         ignore_changes = [ placement, ]
     }

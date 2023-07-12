@@ -52,7 +52,6 @@ resource "juju_application" "ncc_mysql_router" {
     }
 
     units = 0
-    placement = juju_application.nova_cloud_controller.placement
     lifecycle {
         ignore_changes = [ placement, ]
     }

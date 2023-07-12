@@ -52,7 +52,6 @@ resource "juju_application" "neutron_api_plugin_ovn" {
     }
 
     units = 0 // Subordinate charm applications cannot have units
-    placement = juju_application.neutron_api.placement
     lifecycle {
         ignore_changes = [ placement, ]
     }
@@ -69,7 +68,6 @@ resource "juju_application" "neutron_api_mysql_router" {
     }
 
     units = 0
-    placement = juju_application.neutron_api.placement
     lifecycle {
         ignore_changes = [ placement, ]
     }
@@ -87,7 +85,6 @@ resource "juju_application" "ovn_chassis" {
     config = var.config.chassis
 
     units = 0 // Subordinate charm applications cannot have units
-    placement = juju_application.neutron_api.placement
     lifecycle {
         ignore_changes = [ placement, ]
     }
