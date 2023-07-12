@@ -64,6 +64,21 @@ resource "juju_application" "memcached" {
     }
 }
 
+resource "juju_application" "designate_mysql_router" {
+    model = var.model
+    name = "designate-mysql-router"
+    charm {
+        name = "mysql-router"
+        channel = var.channel.mysql
+        series = var.series
+    }
+    units = 0
+    placement = juju_application.designate.placement
+    lifecycle {
+        ignore_changes = [ placement, ]
+    }
+}
+
 resource "juju_integration" "designate_memcached" {
     model = var.model
     application {
@@ -75,14 +90,29 @@ resource "juju_integration" "designate_memcached" {
     }
 }
 
-resource "juju_integration" "designate_mysql" {
+resource "juju_integration" "designate_shared_db" {
     model = var.model
     application {
         name = juju_application.designate.name
+        endpoint = "shared-db"
+    }
+
+    application {
+        name = juju_application.designate_mysql_router.name
+        endpoint = "shared-db"
+    }
+}
+
+resource "juju_integration" "designate_mysql_router_db_router" {
+    model = var.model
+    application {
+        name = juju_application.designate_mysql_router.name
+        endpoint = "db-router"
     }
 
     application {
         name = var.relation_names.mysql_innodb_cluster
+        endpoint = "db-router"
     }
 }
 
