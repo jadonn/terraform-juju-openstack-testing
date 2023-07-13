@@ -34,7 +34,6 @@ resource "juju_application" "vault_mysql_router" {
         series = var.series
     }
     units = 0 // Subordinate applications cannot have units
-    placement = juju_application.vault.placement
     lifecycle {
         ignore_changes = [ placement, ]
     }
