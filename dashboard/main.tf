@@ -33,7 +33,6 @@ resource "juju_application" "openstack_dashboard_mysql_router" {
     }
 
     units = 0 # Subordinate charms must have 0 units
-    placement = juju_application.openstack_dashboard.placement
     lifecycle {
         ignore_changes = [ placement, ]
     }
