@@ -35,7 +35,6 @@ resource "juju_application" "cinder_mysql_router" {
     }
 
     units = 0 # Subordinate charms must have 0 units
-    placement = juju_application.cinder.placement
     lifecycle {
         ignore_changes = [ placement, ]
     }
@@ -142,7 +141,6 @@ resource "juju_application" "cinder_ceph" {
     }
 
     units = 0 # Subordinate charms must have 0 units
-    placement = juju_application.cinder.placement
     lifecycle {
         ignore_changes = [ placement, ]
     }
