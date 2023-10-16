@@ -1,5 +1,3 @@
-output "juju_model" {
-  value = {
-    name = juju_model.openstack.name
-  }
+output "name" {
+  value = juju_model.openstack.name
 }
