@@ -1,12 +1,3 @@
-terraform {
-    required_providers {
-        juju = {
-            version = "~> 0.8.0"
-            source = "juju/juju"
-        }
-    }
-}
-
 resource "juju_application" "placement" {
     model = var.model
     name = "placement"
