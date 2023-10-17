@@ -42,6 +42,7 @@ variable "relation_names" {
         keystone = string
         mysql_innodb_cluster = string
         neutron_api = string
+        ovn_chassis = string
         rabbitmq = string
         vault = string
     })

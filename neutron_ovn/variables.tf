@@ -40,7 +40,6 @@ variable "relation_names" {
     type = object({
         keystone = string
         mysql_innodb_cluster = string
-        nova_compute = string
         rabbitmq = string
         vault = string
     })
