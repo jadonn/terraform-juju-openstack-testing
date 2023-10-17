@@ -8,7 +8,7 @@ terraform {
 }
 
 resource "juju_machine" "openstack" {
-    count = var.count
+    count = var.machine_count
     model = var.juju_model
     series = var.series
     name = "${var.name_prefix}-${count.index}"
