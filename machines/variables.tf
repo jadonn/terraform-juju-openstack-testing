@@ -2,7 +2,7 @@ variable "machine_count" {
   type = number
 }
 
-variable "juju_model" {
+variable "model" {
   type = string
 }
 

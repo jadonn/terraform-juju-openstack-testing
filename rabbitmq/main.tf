@@ -1,5 +1,5 @@
 resource "juju_application" "rabbitmq" {
-    model = var.juju_model
+    model = var.model
     name = "rabbitmq-server"
     charm {
         name = "rabbitmq-server"
