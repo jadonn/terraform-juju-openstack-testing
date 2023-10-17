@@ -155,19 +155,6 @@ resource "juju_integration" "ovn_chassis_ovn_central" {
     }
 }
 
-resource "juju_integration" "ovn_chassis_nova_compute" {
-    model = var.model
-    application {
-        name = juju_application.ovn_chassis.name
-        endpoint = "nova-compute"
-    }
-
-    application {
-        name = var.relation_names.nova_compute
-        endpoint = "neutron-plugin"
-    }
-}
-
 resource "juju_integration" "neutron_api_vault" {
     model = var.model
     application {
