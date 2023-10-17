@@ -160,7 +160,7 @@ resource "juju_integration" "ovn_chassis_nova_compute" {
     }
 
     application {
-        name = var.relation_names.ovn_chassis.name
+        name = var.relation_names.ovn_chassis
         endpoint = "neutron-plugin"
     }
 }
