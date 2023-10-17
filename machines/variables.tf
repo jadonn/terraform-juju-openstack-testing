@@ -1,4 +1,4 @@
-variable "count" {
+variable "machine_count" {
   type = number
 }
 
